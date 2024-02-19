@@ -1,46 +1,57 @@
 import pandas as pd
 import polars as pl
 import json
-from config import years
+from config import years, constructor_schema_contract
 from iomanager import polars_to_parquet
 
 year_created=False
 constructor_created=False
 
 '''Received schema:
->=2023:
-response: list of 10 dictionaries (one per constructor)
-dict keys in each element of the list: 
+[{}] response: list of 10 dictionaries (one per constructor) [ {}, {} ]
     abbreviation: str,
     color: str,
     constructor : bool,
-    race_results: list [
-        fantasy_results: list [ 17 fantasy points scoring attributes] ],
-        price_at_lock: 
+    [{}] race_results: list of 2 to 4 dicts (one dict per result type) [ {}, {} ]
+        [0] [{}, {}] 
+            "fantasy_results": 
+                list [ 17 dicts: {'id': 'attr1', 'points_per_race_list': [X0, X1, ... Xlastrace] }, {}],
+            "id": "weekend_current_points",
+            "results_per_aggregation_list": [],
+            "results_per_race_list": [X0, X1, ... Xlastrace]
+        [1] (2023+) {} price_at_lock dict:
+            dict {'id': 'price_at_lock', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]},
+        [2 or 1(2022)] {} price_change:
+            dict {'id': 'price_change', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]},
+        [3] (2023+) weekend_PPM:
+            dict {'id': 'weekend_PPM', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]}
 
 '''
 
 for i in range(10): #10 f1 constructors
+    logging.info(f'Constructor Number: {i}')
     for year in years:
+        logging.info(f'Year: {year}')
+        if year==2022:
+            #marker used for 2022 different schema
+            small_load = 'small_load'
+        else:
+            small_load = ''
         with open(f'data/landing/fantasy/{year}/constructor_results.json', 'r') as f:
             file = json.load(f)
         #Schema validation
-        assert list(file[0].keys()) == ['abbreviation', 'color', 'constructor', 'race_results']
-        if year == 2022:
-            #in 2022 prices and ppm are not available
-            assert len(file[0]['race_results']) == 2
-            small_load = True
-        else:  
-            assert len(file[0]['race_results']) == 4
+        assert list(file[i].keys()) == constructor_schema_contract['base_keys']
+        assert len(file[i]['race_results']) == len(constructor_schema_contract[f'{small_load}race_result_list_entries'])
         #Get constructor ID
-        constructor_id = file[0]['abbreviation']
-        #Get constructor total fantasy points after race - list of all races in the season
+        constructor_id = file[i]['abbreviation']
+        #list position tracks 1 to 4 list items inside race_results
         list_position = 0
-        assert file[0]['race_results'][list_position]['id'] == 'weekend_current_points'
-        constructor_total_fantasy_points_list = file[0]['race_results'][list_position]['results_per_race_list']
-        #Get constructor fantasy event details
-        base_file = file[0]['race_results'][list_position]['fantasy_results']
-        assert len(base_file) == 17 #list with 17 entries
+        #Get constructor total fantasy points after race - list of all races in the season
+        assert file[i]['race_results'][list_position]['id'] == constructor_schema_contract['fantasy_results_expectations']['id']
+        constructor_total_fantasy_points_list = file[i]['race_results'][list_position]['results_per_race_list']
+        #Get constructor fantasy event details - dicts inside fantasy results list
+        base_file = file[i]['race_results'][list_position]['fantasy_results']
+        assert len(base_file) == constructor_schema_contract['fantasy_results_expectations']['len'] #17 entries expected
         sublist_position = 0
         assert base_file[sublist_position]['id'] == 'quali_not_classified_points'
         quali_not_classified_points = base_file[sublist_position]['points_per_race_list']
@@ -92,38 +103,44 @@ for i in range(10): #10 f1 constructors
         sublist_position +=1
         assert base_file[sublist_position]['id'] == 'race_pit_stop_points'
         race_pit_stop_points = base_file[sublist_position]['points_per_race_list']
-        #Get constructor price before race - list of all races in the season
-        list_position = 1
-        assert file[0]['race_results'][list_position]['id'] == 'price_at_lock'
-        constructor_price_list = file[0]['race_results'][list_position]['results_per_race_list']
-        #Get constructor price change before race - list of all races in the season
-        list_position = 2
-        assert file[0]['race_results'][list_position]['id'] == 'price_change'
-        constructor_price_change_list = file[0]['race_results'][list_position]['results_per_race_list']
-        #Points per million - not useful as it's a calculated field
-        list_position = 3
-        assert file[0]['race_results'][list_position]['id'] == 'weekend_PPM'
+
+        if small_load:
+            constructor_price_change_list = [None]
+            constructor_price_list = [None]
+        else:
+            #Get constructor price before race - list of all races in the season
+            list_position = 1
+            assert file[i]['race_results'][list_position]['id'] == constructor_schema_contract[f'{small_load}race_result_list_entries'][list_position]
+            constructor_price_list = file[i]['race_results'][list_position]['results_per_race_list']
+            #These would cause list out of range for 2022
+            #Get constructor price change before race - list of all races in the season
+            list_position = 2
+            assert file[i]['race_results'][list_position]['id'] == constructor_schema_contract[f'{small_load}race_result_list_entries'][list_position]
+            constructor_price_change_list = file[i]['race_results'][list_position]['results_per_race_list']
+            #Points per million - not useful as it's a calculated field
+            list_position = 3
+            assert file[i]['race_results'][list_position]['id'] == constructor_schema_contract[f'{small_load}race_result_list_entries'][list_position]
         #Build out polars dataframe
         constructor_fantasy = pl.LazyFrame(constructor_total_fantasy_points_list, schema=['points_scored'])
-        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="price", values=constructor_price_list))
-        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="price_change", values=constructor_price_change_list))
+        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="price", values=constructor_price_list).cast(pl.Float64))
+        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="price_change", values=constructor_price_change_list).cast(pl.Float64))
         constructor_fantasy = constructor_fantasy.with_columns(pl.lit(constructor_id).alias('id'))
         constructor_fantasy = constructor_fantasy.with_columns(pl.lit(year).alias('season'))
-        #Assign round number to each row
-        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="round_number", values=[i+1 for i in range(len(constructor_fantasy))]))
+        #Assign round number to each row - data is ordered for now
+        constructor_fantasy = constructor_fantasy.with_columns(pl.Series(name="round_number", values=[i+1 for i in range(constructor_fantasy.select(pl.len()).collect().item())]))
 
         #concatenate all the years
         if not year_created:
             temp_df = constructor_fantasy
             year_created = True
         else:
-            temp_df = pl.concat([df, constructor_fantasy])
+            temp_df = pl.concat([temp_df, constructor_fantasy])
     
     #concatenate all the constructors
     if not constructor_created:
         df = temp_df
         constructor_created = True
     else:
-        df = pl.concat([df, temp_df])
+        df = pl.concat([df, temp_df], how="vertical_relaxed")
 
 polars_to_parquet(filedir='data/bronze/fantasy', filename='constructor_fantasy_attributes', data=df)
