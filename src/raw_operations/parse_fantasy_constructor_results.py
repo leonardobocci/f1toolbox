@@ -1,8 +1,13 @@
+import os, sys
+sys.path.append(os.path.abspath('./'))
+
 import pandas as pd
 import polars as pl
 import json
-from config import years, constructor_schema_contract
-from iomanager import polars_to_parquet
+import logging
+
+from src.utils.config import years, constructor_schema_contract
+from src.utils.iomanager import polars_to_parquet
 
 year_created=False
 constructor_created=False

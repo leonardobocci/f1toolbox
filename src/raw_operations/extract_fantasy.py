@@ -1,9 +1,11 @@
+import os, sys
+sys.path.append(os.path.abspath('./'))
+
 import json
-import os
 import logging
 import requests
-from config import years
-from iomanager import save_raw_json as save_json
+from src.utils.config import years
+from src.utils.iomanager import save_raw_json as save_json
 
 BASE_FANTASY_URL = 'https://f1fantasytoolsapi-szumjzgxfa-ew.a.run.app'
 FANTASY_ASSETS_ENDPOINT = 'asset-info/init'
