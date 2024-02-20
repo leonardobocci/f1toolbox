@@ -1,5 +1,6 @@
 from dagster import ConfigurableResource
 from typing import Union
+import requests
 
 class LocalIoResource(ConfigurableResource):
     def os_save_json(data:dict, filepath:str)->None:
