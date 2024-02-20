@@ -28,7 +28,7 @@ def get_request(url:str, params:dict=None) -> dict:
 @asset(
     group_name='raw_fantasy_files'
 )
-def current_fantasy_assets(context):
+def landing_fantasy_current_assets(context):
     curr_assets = get_request(f'{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}')
     save_json(curr_assets, 'current_fantasy_assets')
     num_constructors = len(curr_assets['constructors'])
@@ -41,9 +41,11 @@ def current_fantasy_assets(context):
     group_name='raw_fantasy_files',
     partitions_def=fantasy_partitions
 )
-def fantasy_constructor_results(context):
+def landing_fantasy_constructor_results(context):
     year_partition = context.asset_partition_key_for_output()
     season = year_partition[0]
+    print(season)
+    logging.warning(season)
     results_params = {
         "season": season
     }
@@ -57,7 +59,7 @@ def fantasy_constructor_results(context):
     group_name='raw_fantasy_files',
     partitions_def=fantasy_partitions
 )
-def fantasy_driver_results(context):
+def landing_fantasy_driver_results(context):
     year_partition = context.asset_partition_key_for_output()
     season = year_partition[0]
     results_params = {
@@ -73,7 +75,7 @@ def fantasy_driver_results(context):
     group_name='raw_fantasy_files',
     partitions_def=fantasy_partitions
 )
-def fantasy_races(context):
+def landing_fantasy_races(context):
     year_partition = context.asset_partition_key_for_output()
     season = year_partition[0]
     results_params = {

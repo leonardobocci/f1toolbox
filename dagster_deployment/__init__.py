@@ -1,8 +1,9 @@
 from dagster import Definitions, load_assets_from_modules
-from assets import fantasy_landing
+from assets import fantasy_landing, fantasy_bronze
 
-fantasy_assets = load_assets_from_modules([fantasy_landing])
+landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
+bronze_fantasy_assets = load_assets_from_modules([fantasy_bronze])
 
 defs = Definitions(
-    assets=[*fantasy_assets],
+    assets=[*landing_fantasy_assets, *bronze_fantasy_assets],
 )
