@@ -5,7 +5,7 @@ import json
 import logging
 import requests
 from dagster import asset, MetadataValue
-from dagster_deployment.partitions import fantasy_partitions
+from partitions import fantasy_partitions
 from src.utils.config import years
 from src.utils.iomanager import save_raw_json as save_json
 
