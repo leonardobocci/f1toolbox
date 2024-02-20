@@ -2,3 +2,4 @@ dagster
 dagster-webserver
 dagster-postgres
 polars
+pyarrow
