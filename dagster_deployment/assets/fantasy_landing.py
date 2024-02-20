@@ -43,11 +43,12 @@ def current_fantasy_assets(context):
 )
 def fantasy_constructor_results(context):
     year_partition = context.asset_partition_key_for_output()
+    season = year_partition[0]
     results_params = {
-        "season": year_partition[0]
+        "season": season
     }
     constructor_results_resp = get_request(f'{BASE_FANTASY_URL}/{CONSTRUCTOR_RESULTS_ENDPOINT}', params=results_params)
-    save_json(constructor_results_resp, 'constructor_results', year)
+    save_json(constructor_results_resp, 'constructor_results', season)
     num_rows = len(constructor_results_resp)
     context.add_output_metadata({'Constructors':MetadataValue.int(num_rows)})
     return
@@ -58,11 +59,12 @@ def fantasy_constructor_results(context):
 )
 def fantasy_driver_results(context):
     year_partition = context.asset_partition_key_for_output()
+    season = year_partition[0]
     results_params = {
-        "season": year_partition[0]
+        "season": season
     }
     driver_results_resp = get_request(f'{BASE_FANTASY_URL}/{DRIVER_RESULTS_ENDPOINT}', params=results_params)
-    save_json(driver_results_resp, 'driver_results', year)
+    save_json(driver_results_resp, 'driver_results', season)
     num_rows = len(driver_results_resp)
     context.add_output_metadata({'Drivers':MetadataValue.int(num_rows)})
     return
@@ -73,11 +75,12 @@ def fantasy_driver_results(context):
 )
 def fantasy_races(context):
     year_partition = context.asset_partition_key_for_output()
+    season = year_partition[0]
     results_params = {
-        "season": year_partition[0]
+        "season": season
     }
     races_resp = get_request(f'{BASE_FANTASY_URL}/{RACES_ENDPOINT}', params=results_params)
-    save_json(races_resp, 'races', year)
+    save_json(races_resp, 'races', season)
     num_rows = len(races_resp['races'])
     context.add_output_metadata({'Races':MetadataValue.int(num_rows)})
     return

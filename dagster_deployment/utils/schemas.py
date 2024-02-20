@@ -1,5 +1,3 @@
-years = [2022, 2023] #,2024
-
 season_metadata = {
     #valid since 2018
     'latest': {
