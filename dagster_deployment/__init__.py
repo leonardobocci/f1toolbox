@@ -6,7 +6,4 @@ fantasy_assets = load_assets_from_modules([fantasy_results])
 
 defs = Definitions(
     assets=[*fantasy_assets],
-    resources={
-        'fantasy':fantasy_resource.FantasyResource
-    }
 )

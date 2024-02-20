@@ -6,7 +6,7 @@ import logging
 import requests
 from dagster import asset, MetadataValue
 from partitions import fantasy_partitions
-from resources.fantasy_resource.fantasy_resource import save_raw_json as save_json
+from utils.iomanager import save_raw_json
 
 BASE_FANTASY_URL = 'https://f1fantasytoolsapi-szumjzgxfa-ew.a.run.app'
 FANTASY_ASSETS_ENDPOINT = 'asset-info/init'
