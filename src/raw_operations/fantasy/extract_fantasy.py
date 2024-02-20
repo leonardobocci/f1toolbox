@@ -13,7 +13,6 @@ DRIVER_RESULTS_ENDPOINT = '/race-results/driver'
 CONSTRUCTOR_RESULTS_ENDPOINT = '/race-results/constructor'
 RACES_ENDPOINT = '/race-results/races'
 
-
 def get_request(url:str, params:dict=None):
     resp = requests.get(url, params)
     try:

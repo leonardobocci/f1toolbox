@@ -1,0 +1,12 @@
+dagster-user-deployments:
+  enabled: true
+  deployments:
+    - name: "dagster-k8s"
+      image:
+        repository: "leobocci/dagster_test"
+        tag: latest
+        pullPolicy: Always
+      dagsterApiGrpcArgs:
+        - "--python-file"
+        - "/app/__init__.py"
+      port: 8081
