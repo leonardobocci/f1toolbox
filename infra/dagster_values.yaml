@@ -3,7 +3,7 @@ dagster-user-deployments:
   deployments:
     - name: "dagster-k8s"
       image:
-        repository: "leobocci/dagster_test"
+        repository: "leobocci/f1toolbox-dagster"
         tag: latest
         pullPolicy: Always
       dagsterApiGrpcArgs:
