@@ -12,7 +12,6 @@ FANTASY_ASSETS_ENDPOINT = 'asset-info/init'
 DRIVER_RESULTS_ENDPOINT = '/race-results/driver'
 CONSTRUCTOR_RESULTS_ENDPOINT = '/race-results/constructor'
 RACES_ENDPOINT = '/race-results/races'
-LAST_AVAILABLE_RACE_ENDPOINT = '/race-results/last-race'
 
 
 def get_request(url:str, params:dict=None):
@@ -40,8 +39,6 @@ for year in years:
     save_json(constructor_results_resp, 'constructor_results', year)
     races_resp = get_request(f'{BASE_FANTASY_URL}/{RACES_ENDPOINT}', params=results_params)
     save_json(races_resp, 'races', year)
-    last_race_resp = get_request(f'{BASE_FANTASY_URL}/{LAST_AVAILABLE_RACE_ENDPOINT}', params=results_params)
-    save_json(last_race_resp, 'last_race', year)
     
     
     

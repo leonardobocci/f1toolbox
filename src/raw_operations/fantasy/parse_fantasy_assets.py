@@ -30,7 +30,7 @@ def format_raw_df(df:pl.DataFrame, lookup_df:pl.DataFrame) -> pl.DataFrame:
         *set(lookup_df.columns) - set(['id', 'color']),
         pl.coalesce('id', 'abbreviation').alias('id'),
         pl.coalesce('color', 'color_right').alias('color'),
-        pl.col('last_updated'))
+        pl.col('last_updated').fill_null(strategy="min"))
     return df1
 
 constructors = pl.LazyFrame(file['constructors'])
