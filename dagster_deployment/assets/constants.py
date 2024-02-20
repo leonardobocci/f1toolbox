@@ -1,4 +1,4 @@
-YEARS = [2022, 2023] #, 2024
+YEARS = ['2022', '2023'] #, '2024'
 
 #Paths for raw fantasy file landing zones
 RAW_FANTASY_PATH = 'data/landing/fantasy/'
