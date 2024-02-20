@@ -4,10 +4,13 @@ import logging
 import polars as pl
 from typing import Union
 
-def save_raw_json(data:dict, year:int, filename:str):
+def save_raw_json(data:dict, filename:str, year:int=None):
     '''Save the raw data extracted from the Fantasy APIs as json files'''
     if data:
-        raw_fantasy_dir = f'data/landing/fantasy/{year}'
+        if year:
+            raw_fantasy_dir = f'data/landing/fantasy/{year}'
+        else:
+            raw_fantasy_dir = f'data/landing/fantasy'
         filepath = os.path.join(raw_fantasy_dir, f'{filename}.json')
         os.makedirs(raw_fantasy_dir, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:

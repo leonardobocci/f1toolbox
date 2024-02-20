@@ -26,22 +26,22 @@ def get_request(url:str, params:dict=None):
     resp_dict = resp.json()
     return resp_dict
 
+curr_assets = get_request(f'{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}')
+save_json(curr_assets, 'current_fantasy_assets')
 for year in years:
     #iterate over the available seasons
     results_params = {
         "season": year
     }
     #make all the needed requests and save them as json files
-    info_resp = get_request(f'{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}')
-    save_json(info_resp, year, 'fantasy_assets')
     driver_results_resp = get_request(f'{BASE_FANTASY_URL}/{DRIVER_RESULTS_ENDPOINT}', params=results_params)
-    save_json(driver_results_resp, year, 'driver_results')
+    save_json(driver_results_resp, 'driver_results', year)
     constructor_results_resp = get_request(f'{BASE_FANTASY_URL}/{CONSTRUCTOR_RESULTS_ENDPOINT}', params=results_params)
-    save_json(constructor_results_resp, year, 'constructor_results')
+    save_json(constructor_results_resp, 'constructor_results', year)
     races_resp = get_request(f'{BASE_FANTASY_URL}/{RACES_ENDPOINT}', params=results_params)
-    save_json(races_resp, year, 'races')
+    save_json(races_resp, 'races', year)
     last_race_resp = get_request(f'{BASE_FANTASY_URL}/{LAST_AVAILABLE_RACE_ENDPOINT}', params=results_params)
-    save_json(last_race_resp, year, 'last_race')
+    save_json(last_race_resp, 'last_race', year)
     
     
     
