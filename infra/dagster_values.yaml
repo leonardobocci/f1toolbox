@@ -6,7 +6,7 @@ dagster-user-deployments:
         repository: "leobocci/f1toolbox-dagster"
         tag: latest
         pullPolicy: Always
-      dagsterApiGrpcArgs:
+      codeServerArgs:
         - "--python-file"
         - "/app/__init__.py"
       port: 8081
