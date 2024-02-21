@@ -29,6 +29,7 @@ def get_request(url:str, params:dict=None) -> dict:
     group_name='raw_fantasy_files'
 )
 def landing_fantasy_current_assets(context):
+    '''Save raw data from f1fantasytools about current driver and constructor prices in landing zone'''
     curr_assets = get_request(f'{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}')
     save_json(curr_assets, 'current_fantasy_assets')
     num_constructors = len(curr_assets['constructors'])
@@ -42,6 +43,7 @@ def landing_fantasy_current_assets(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_constructor_results(context):
+    '''Save raw data from f1fantasytools about constructor season fantasy points and prices in landing zone'''
     season = context.partition_key
     results_params = {
         "season": season
@@ -57,6 +59,7 @@ def landing_fantasy_constructor_results(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_driver_results(context):
+    '''Save raw data from f1fantasytools about driver season fantasy points and prices in landing zone'''
     season = context.partition_key
     results_params = {
         "season": season
@@ -72,6 +75,7 @@ def landing_fantasy_driver_results(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_races(context):
+    '''Save raw data from f1fantasytools about season races in landing zone'''
     season = context.partition_key
     results_params = {
         "season": season

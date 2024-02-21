@@ -43,6 +43,7 @@ def format_raw_df(asset_type:str, lookup_df:pl.DataFrame) -> pl.DataFrame:
     deps=["landing_fantasy_races"]
 )
 def bronze_fantasy_races(context):
+    '''Parse landing zone json to parquet file for fantasy race data'''
     created=False
     for year in years:
         context.log.info(f'Year: {year}')
@@ -66,6 +67,14 @@ def bronze_fantasy_races(context):
     deps=["landing_fantasy_constructor_results"]
 )
 def bronze_fantasy_constructor_results(context):
+    '''Parse landing zone json to parquet file for fantasy constructor results'''
+    #Use the generic result parser to parse the driver results
+    df = parse_results('constructor')
+    #Save them using the iomanager
+    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='constructor_fantasy_attributes', data=df)
+    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet').to_dict()
+    context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
+    context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     '''Received schema:
     [{}] response: list of 10 dictionaries (one per constructor) [ {}, {} ]
         abbreviation: str,
@@ -85,13 +94,6 @@ def bronze_fantasy_constructor_results(context):
             [3] (2023+) weekend_PPM:
                 dict {'id': 'weekend_PPM', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]}
     '''
-    #Use the generic result parser to parse the driver results
-    df = parse_results('constructor')
-    #Save them using the iomanager
-    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='constructor_fantasy_attributes', data=df)
-    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet').to_dict()
-    context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
-    context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     return
 
 @asset(
@@ -99,6 +101,14 @@ def bronze_fantasy_constructor_results(context):
     deps=["landing_fantasy_driver_results"]
 )
 def bronze_fantasy_driver_results(context):
+    '''Parse landing zone json to parquet file for fantasy driver results'''
+    #Use the generic result parser to parse the driver results
+    df = parse_results('driver')
+    #Save them using the iomanager
+    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='driver_fantasy_attributes', data=df)
+    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet').to_dict()
+    context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
+    context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     '''Received schema:
     [{}] response: list of 20 dictionaries (one per driver) [ {}, {} ]
         abbreviation: str,
@@ -119,13 +129,6 @@ def bronze_fantasy_driver_results(context):
                 dict {'id': 'weekend_PPM', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]}
             [4-15] Not Required - Actual race results, not fantasy-related
     '''
-    #Use the generic result parser to parse the driver results
-    df = parse_results('driver')
-    #Save them using the iomanager
-    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='driver_fantasy_attributes', data=df)
-    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet').to_dict()
-    context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
-    context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     return
 
 @asset(
@@ -133,6 +136,7 @@ def bronze_fantasy_driver_results(context):
     deps=["landing_fantasy_current_assets", "bronze_fantasy_constructor_results"]
 )
 def bronze_fantasy_current_constructors(context):
+    '''Parse landing zone json to parquet file for fantasy current constructor info'''
     created=False
     constructor_lookup = pl.scan_csv('utils/constructor_mapping.csv')
     unique_constructor_list = pl.scan_parquet(f'{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet').select('id', 'color').unique()
@@ -150,6 +154,7 @@ def bronze_fantasy_current_constructors(context):
     deps=["landing_fantasy_current_assets", "bronze_fantasy_driver_results"]
 )
 def bronze_fantasy_current_drivers(context):
+    '''Parse landing zone json to parquet file for fantasy current constructor info'''
     created=False
     drivers_lookup = pl.scan_csv('utils/driver_mapping.csv')
     unique_driver_list = pl.scan_parquet(f'{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet').select('id', 'color').unique()
