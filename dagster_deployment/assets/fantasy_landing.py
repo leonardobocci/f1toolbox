@@ -20,7 +20,7 @@ def get_request(url:str, params:dict=None) -> dict:
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
         if resp.status_code == 404:
-            logging.warning(f'No data found for {url}')
+            context.log.warning(f'No data found for {url}')
             return {}
     resp_dict = resp.json()
     return resp_dict

@@ -19,18 +19,18 @@ def parse_results(result_type: str) -> pl.DataFrame:
     '''
     year_created=False
     if result_type == 'driver':
-        from src.utils.config import driver_schema_contract as schema_contract
+        from utils.config import driver_schema_contract as schema_contract
     elif result_type == 'constructor':
-        from src.utils.config import constructor_schema_contract as schema_contract
+        from utils.config import constructor_schema_contract as schema_contract
     else:
         raise ValueError('result_type must be either "driver" or "constructor"')
 
     for year in years:
-        logging.info(f'Year: {year}')
+        context.log.info(f'Year: {year}')
         with open(f'data/landing/fantasy/{year}/{result_type}_results.json', 'r') as f:
             file = json.load(f)
         for i in range(season_metadata['latest'][f'{result_type}s']):
-            logging.info(f'{result_type} Number: {i}')
+            context.log.info(f'{result_type} Number: {i}')
             #Get fantasy points and create dataframe of length of number of races
             fantasy_points = file[i]['race_results'][0]['results_per_race_list']
             fantasy = pl.LazyFrame(fantasy_points, schema=['points_scored'])

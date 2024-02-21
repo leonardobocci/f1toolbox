@@ -5,7 +5,6 @@ import json
 import logging
 import polars as pl
 from dagster import asset, MetadataValue
-from partitions import fantasy_partitions
 from assets import constants
 from assets.constants import YEARS as years
 from utils.iomanager import polars_to_parquet
@@ -46,7 +45,7 @@ def format_raw_df(asset_type:str, lookup_df:pl.DataFrame) -> pl.DataFrame:
 def bronze_fantasy_races(context):
     created=False
     for year in years:
-        logging.info(f'Year: {year}')
+        context.log.info(f'Year: {year}')
         with open(f'{constants.RAW_FANTASY_PATH}/{year}/races.json', 'r') as f:
             file = json.load(f)
         temp_df = pl.LazyFrame(file['races'])

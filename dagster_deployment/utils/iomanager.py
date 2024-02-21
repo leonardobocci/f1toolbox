@@ -17,7 +17,7 @@ def save_raw_json(data:dict, filename:str, year:int=None):
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
     else:
-        logging.warning(f'Empty dict received for {year} - {filename}')
+        context.log.warning(f'Empty dict received for {year} - {filename}')
     return
 
 def polars_to_parquet(filedir:str, filename:str, data:Union[pl.DataFrame, pl.LazyFrame]):
