@@ -47,7 +47,7 @@ def bronze_fantasy_races(context):
     created=False
     for year in years:
         logging.info(f'Year: {year}')
-        with open(f'data/landing/fantasy/{year}/races.json', 'r') as f:
+        with open(f'{constants.RAW_FANTASY_PATH}/{year}/races.json', 'r') as f:
             file = json.load(f)
         temp_df = pl.LazyFrame(file['races'])
         temp_df = temp_df.with_columns(pl.lit(year).alias('season'))

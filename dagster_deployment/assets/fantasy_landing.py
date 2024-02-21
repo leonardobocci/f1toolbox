@@ -42,10 +42,7 @@ def landing_fantasy_current_assets(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_constructor_results(context):
-    year_partition = context.asset_partition_key_for_output()
-    season = year_partition[0]
-    print(season)
-    logging.warning(season)
+    season = context.partition_key
     results_params = {
         "season": season
     }
@@ -60,8 +57,7 @@ def landing_fantasy_constructor_results(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_driver_results(context):
-    year_partition = context.asset_partition_key_for_output()
-    season = year_partition[0]
+    season = context.partition_key
     results_params = {
         "season": season
     }
@@ -76,8 +72,7 @@ def landing_fantasy_driver_results(context):
     partitions_def=fantasy_partitions
 )
 def landing_fantasy_races(context):
-    year_partition = context.asset_partition_key_for_output()
-    season = year_partition[0]
+    season = context.partition_key
     results_params = {
         "season": season
     }
