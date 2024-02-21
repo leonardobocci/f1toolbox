@@ -19,9 +19,9 @@ def parse_results(result_type: str) -> pl.DataFrame:
     '''
     year_created=False
     if result_type == 'driver':
-        from utils.config import driver_schema_contract as schema_contract
+        from utils.schemas import driver_schema_contract as schema_contract
     elif result_type == 'constructor':
-        from utils.config import constructor_schema_contract as schema_contract
+        from utils.schemas import constructor_schema_contract as schema_contract
     else:
         raise ValueError('result_type must be either "driver" or "constructor"')
 
