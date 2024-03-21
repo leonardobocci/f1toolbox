@@ -3,6 +3,7 @@ import json
 import logging
 import polars as pl
 from typing import Union
+RAW_FANTASY_PATH = 'data/landing/fantasy'
 BRONZE_FANTASY_PATH = 'data/bronze/fantasy'
 
 def save_raw_json(data:dict, filename:str, year:int=None):

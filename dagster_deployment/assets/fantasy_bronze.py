@@ -42,8 +42,8 @@ def format_raw_df(asset_type:str, lookup_df:pl.DataFrame) -> pl.DataFrame:
     group_name='bronze_fantasy_files',
     deps=["landing_fantasy_races"]
 )
-def bronze_fantasy_races(context):
-    '''Parse landing zone json to parquet file for fantasy race data'''
+def bronze_fantasy_rounds(context):
+    '''Parse landing zone json to parquet file for fantasy race weekend data'''
     created=False
     for year in years:
         context.log.info(f'Year: {year}')
@@ -57,7 +57,7 @@ def bronze_fantasy_races(context):
         else:
             df = pl.concat([df, temp_df])
     polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='races', data=df)   
-    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/races.parquet').to_dict()
+    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/rounds.parquet').to_dict()
     context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
     context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     return 
