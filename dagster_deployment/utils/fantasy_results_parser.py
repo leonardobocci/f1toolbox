@@ -9,7 +9,7 @@ from utils.schemas import season_metadata
 from utils.iomanager import polars_to_parquet
 from assets.constants import YEARS as years
 
-def parse_results(result_type: str) -> pl.DataFrame:
+def parse_results(context, result_type: str) -> pl.DataFrame:
     '''Parse constructor or driver results from https://f1fantasytools.com/race-results
 
     arguments:

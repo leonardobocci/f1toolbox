@@ -57,7 +57,7 @@ def bronze_fantasy_rounds(context):
         else:
             df = pl.concat([df, temp_df])
     polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='races', data=df)   
-    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/rounds.parquet').to_dict()
+    meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/races.parquet').to_dict()
     context.add_output_metadata({'Rows':MetadataValue.int(meta['num_rows'])})
     context.add_output_metadata({'Columns':MetadataValue.int(meta['num_columns'])})
     return 
@@ -69,7 +69,7 @@ def bronze_fantasy_rounds(context):
 def bronze_fantasy_constructor_results(context):
     '''Parse landing zone json to parquet file for fantasy constructor results'''
     #Use the generic result parser to parse the driver results
-    df = parse_results('constructor')
+    df = parse_results(context, 'constructor')
     #Save them using the iomanager
     polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='constructor_fantasy_attributes', data=df)
     meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet').to_dict()
@@ -103,7 +103,7 @@ def bronze_fantasy_constructor_results(context):
 def bronze_fantasy_driver_results(context):
     '''Parse landing zone json to parquet file for fantasy driver results'''
     #Use the generic result parser to parse the driver results
-    df = parse_results('driver')
+    df = parse_results(context, 'driver')
     #Save them using the iomanager
     polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename='driver_fantasy_attributes', data=df)
     meta = parquet_metadata(f'{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet').to_dict()
