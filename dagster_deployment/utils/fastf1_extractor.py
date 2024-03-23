@@ -1,6 +1,5 @@
 import fastf1
 import flatdict
-import logging
 
 from fastf1.core import DataNotLoadedError
 from utils.iomanager import save_raw_fastf1_json as save_json
@@ -46,7 +45,7 @@ def _extract_event(session: fastf1.core.Session) -> None:
     '''
     return
 
-def extract_race_events(year: int, event_num: int = 1) -> dict:
+def extract_race_events(context, year: int, event_num: int = 1) -> dict:
     ''' 
     Extract all race events in a year and save to landing zone.
     '''
@@ -60,7 +59,7 @@ def extract_race_events(year: int, event_num: int = 1) -> dict:
     if year == datetime.today().year:
         remaining_num_events = len(fastf1.get_events_remaining(dt=datetime.today(), include_testing=False))
         num_events = num_events - remaining_num_events
-    logging.info(f'Extracting {num_events} events for {year}')
+    context.log.info(f'Extracting {num_events} events for {year}')
     while event_num <= num_events:
         session = fastf1.get_session(year=year, gp=event_num, identifier=1)
         if not session.f1_api_support:
@@ -68,7 +67,7 @@ def extract_race_events(year: int, event_num: int = 1) -> dict:
         session.load(laps=False, telemetry=False, weather=True, messages=False)
         _extract_event(session)
         events['saved'].append(f'{year}_{event_num}')
-        logging.info(f'{year}_{event_num} saved')
+        context.log.info(f'{year}_{event_num} saved')
         event_num += 1
     return events
 

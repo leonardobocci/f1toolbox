@@ -19,7 +19,7 @@ from assets.constants import SEGMENTS as segments
 )
 def landing_fastf1_events(context):
     year = context.partition_key
-    saved_events = extract_race_events(int(year))
+    saved_events = extract_race_events(context, int(year))
     context.add_output_metadata({'Number of Saved Events':MetadataValue.int(len(saved_events['saved']))})
     context.add_output_metadata({'Total number of Events':MetadataValue.int(saved_events['total'])})
     return
