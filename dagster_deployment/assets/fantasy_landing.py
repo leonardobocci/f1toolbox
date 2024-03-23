@@ -1,12 +1,10 @@
 import os, sys
 sys.path.append(os.path.abspath('./'))
 
-import json
-import logging
 import requests
 from dagster import asset, MetadataValue
 from partitions import fantasy_partitions
-from utils.iomanager import save_raw_json as save_json
+from utils.iomanager import save_raw_fantasy_json as save_json
 
 BASE_FANTASY_URL = 'https://f1fantasytoolsapi-szumjzgxfa-ew.a.run.app'
 FANTASY_ASSETS_ENDPOINT = 'asset-info/init'

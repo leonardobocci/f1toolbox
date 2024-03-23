@@ -2,7 +2,6 @@ import os, sys
 sys.path.append(os.path.abspath('./'))
 
 import json
-import logging
 import polars as pl
 from dagster import asset, MetadataValue
 from assets import constants

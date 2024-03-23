@@ -37,7 +37,12 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
             #Get ID and color and assign as literals
             fantasy = fantasy.with_columns(pl.lit(file[i]['abbreviation']).alias('id'))
             fantasy = fantasy.with_columns(pl.lit(file[i]['color']).alias('color'))
-            assert len(file[i]['race_results'][0]['fantasy_results']) == schema_contract['fantasy_results_expectations']['len']
+            try:
+                assert len(file[i]['race_results'][0]['fantasy_results']) == schema_contract['fantasy_results_expectations']['len']
+            except AssertionError:
+                logging.error(f'Fantasy results length mismatch for {result_type} {i} in {year}')
+                logging.error(f'Expected: {schema_contract["fantasy_results_expectations"]}, \n Got: {file[i]["race_results"][0]["fantasy_results"]}')
+                raise AssertionError()
             #iterate over the fantasy scoring attributes and assign them as named cols
             for y in range(schema_contract['fantasy_results_expectations']['len']):
                 assert file[i]['race_results'][0]['fantasy_results'][y]['id'] == schema_contract['fantasy_results_expectations']['entries'][y]
