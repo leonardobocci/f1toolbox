@@ -14,9 +14,9 @@ from utils.fastf1_extractor import extract_fastf1
     partitions_def=fast_f1_season_partitions
 )
 def landing_fastf1_events(context):
+    '''Extract all data streams from fasft1 and save to landing zone.'''
     year = context.partition_key
     meta = extract_fastf1(context, int(year))
     context.add_output_metadata({'Number of Saved Events':MetadataValue.int(len(meta['saved_events']))})
     context.add_output_metadata({'Total number of Events':MetadataValue.int(meta['total_events'])})
-    
     return

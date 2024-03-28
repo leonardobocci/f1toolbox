@@ -74,9 +74,53 @@ def _extract_session_weather(session: fastf1.core.Session, event_info: dict, yea
     Returns the session id that was saved.'''
     weather = pl.LazyFrame(session.weather_data)
     session_id = session.session_info['Key']
-    weather.with_columns(pl.lit(session_id).alias('session_id'))
-    weather.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
+    weather = weather.with_columns(pl.lit(session_id).alias('session_id'))
+    weather = weather.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
     polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/weathers/{session_id}', filename='weather', data=weather)   
+    return session_id
+
+def _extract_session_results(session: fastf1.core.Session, event_info: dict, year: int) -> int:
+    '''Extract results data from a session object and save to landing zone (parquet).
+    The file path includes the session id.
+    Returns the session id that was saved.'''
+    results = pl.LazyFrame(session.results)
+    session_id = session.session_info['Key']
+    results = results.with_columns(pl.lit(session_id).alias('session_id'))
+    results = results.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/results/{session_id}', filename='results', data=results)   
+    return session_id
+
+def _extract_session_laps(session: fastf1.core.Session, event_info: dict, year: int) -> int:
+    '''Extract lap data from a session object and save to landing zone (parquet).
+    The file path includes the session id.
+    Returns the session id that was saved.'''
+    laps = pl.LazyFrame(session.laps)
+    session_id = session.session_info['Key']
+    laps = laps.with_columns(pl.lit(session_id).alias('session_id'))
+    laps = laps.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/laps/{session_id}', filename='laps', data=laps)   
+    return session_id
+
+def _extract_session_telemetry(session: fastf1.core.Session, event_info: dict, year: int) -> int:
+    '''Extract telemetry data from a session object and save to landing zone (parquet).
+    The file path includes the session id.
+    Returns the session id that was saved.'''
+    car_data = session.car_data
+    pos_data = session.pos_data
+    telemetry = pl.LazyFrame()
+    if not (car_data and pos_data):
+        #Telemetry is not available
+        return None
+    for key in session.car_data.keys():
+        car_telemetry = pl.LazyFrame(session.pos_data[key].merge_channels(session.car_data[key]))
+        car_telemetry = car_telemetry.with_columns(pl.lit(key).alias('car_number'))
+        if telemetry.width:
+            telemetry = pl.concat([telemetry, car_telemetry], how="vertical_relaxed")
+        else:
+            telemetry = car_telemetry
+    session_id = session.session_info['Key']
+    telemetry = telemetry.with_columns(pl.lit(session_id).alias('session_id'))
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/telemetry/{session_id}', filename='telemetry', data=telemetry)   
     return session_id
 
 def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
@@ -100,7 +144,7 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
         session = fastf1.get_session(year=year, gp=event_num, identifier=1)
         if not session.f1_api_support:
             raise Exception('Fast F1 does not support this session')
-        session.load(laps=False, telemetry=True, weather=True, messages=False)
+        session.load(laps=True, telemetry=True, weather=True, messages=False)
         #Collect general event information
         event_info = _extract_event(session, year)
         extraction_metadata['saved_events'].append(f'{year}_{event_num}')
@@ -109,9 +153,24 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
         saved_session = _extract_session(session, event_info, year)
         extraction_metadata['saved_sessions'].append(saved_session)
         context.log.info(f'{year}_{event_num} session saved')
+        #Collect session results
+        saved_results_session = _extract_session_results(session, event_info, year)
+        extraction_metadata['saved_sessions'].append(saved_results_session)
+        context.log.info(f'{year}_{event_num} results saved')
         #Collect event weather data
         saved_weather_session = _extract_session_weather(session, event_info, year)
         extraction_metadata['saved_weather_sessions'].append(saved_weather_session)
         context.log.info(f'{year}_{event_num} weather saved')
+        #Collect lap data
+        saved_lap_session = _extract_session_laps(session, event_info, year)
+        extraction_metadata['saved_sessions'].append(saved_lap_session)
+        context.log.info(f'{year}_{event_num} laps saved')
+        #Collect telemetry data
+        saved_telemetry_session = _extract_session_telemetry(session, event_info, year)
+        if not saved_telemetry_session:
+            context.log.warning(f'{year}_{event_num} telemetry not available')
+        else:
+            extraction_metadata['saved_sessions'].append(saved_telemetry_session)
+            context.log.info(f'{year}_{event_num} telemetry saved')
         event_num += 1
     return extraction_metadata
