@@ -5,7 +5,6 @@ import polars as pl
 import json
 
 from utils.schemas import season_metadata
-from utils.iomanager import polars_to_parquet
 from assets.constants import YEARS as years
 
 def parse_results(context, result_type: str) -> pl.DataFrame:
@@ -82,14 +81,14 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
             fantasy = fantasy.with_columns(pl.lit(year).alias('season'))
             fantasy = fantasy.with_columns(pl.Series(name="round_number", values=[i+1 for i in range(fantasy.select(pl.len()).collect().item())]))
         
-            #concatenate all the years
-            if not year_created:
-                df = fantasy
-                year_created = True
+        #concatenate all the years
+        if not year_created:
+            df = fantasy
+            year_created = True
+        else:
+            if schema_contract['fantasy_results_expectations']['entries'] == schema_contract_no_sprints['fantasy_results_expectations']['entries']:
+                context.log.warning('Using polars concat with diagonal to fill empty columns, due to missing sprint race data...')
+                df = pl.concat([df, fantasy], how='diagonal')
             else:
-                if schema_contract['fantasy_results_expectations']['entries'] == schema_contract_no_sprints['fantasy_results_expectations']['entries']:
-                    context.log.warning('Using polars concat with diagonal to fill empty columns, due to missing sprint race data...')
-                    df = pl.concat([df, fantasy], how='diagonal')
-                else:
-                    df = pl.concat([df, fantasy])
+                df = pl.concat([df, fantasy])
     return df

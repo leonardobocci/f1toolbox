@@ -13,7 +13,7 @@ from utils.fastf1_extractor import extract_fastf1
     group_name='raw_fastf1_files',
     partitions_def=fast_f1_season_partitions
 )
-def landing_fastf1_events(context):
+def landing_fastf1_assets(context):
     '''Extract all data streams from fasft1 and save to landing zone.'''
     year = context.partition_key
     meta = extract_fastf1(context, int(year))
