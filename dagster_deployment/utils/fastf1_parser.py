@@ -11,7 +11,7 @@ def parse_json_signals(context, signal_directory: str) -> pl.DataFrame:
     return df
 
 def parse_parquet_signals(context, signal_directory: str) -> pl.DataFrame:
-    glob_path = glob.glob(f'data/landing/fastf1/*/{signal_directory}/*.json')
+    glob_path = glob.glob(f'data/landing/fastf1/*/{signal_directory}/*.parquet')
     dfs = [pl.scan_pyarrow_dataset(ds.dataset(file)) for file in glob_path]
     df = pl.concat(dfs, how='vertical_relaxed')
     return df

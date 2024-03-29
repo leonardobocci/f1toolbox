@@ -75,7 +75,7 @@ def _extract_session_weather(session: fastf1.core.Session, event_info: dict, yea
     session_id = session.session_info['Key']
     weather = weather.with_columns(pl.lit(session_id).alias('session_id'))
     weather = weather.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
-    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/weathers/{session_id}', filename='weather', data=weather)   
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/weathers', filename=f'{session_id}', data=weather)   
     return session_id
 
 def _extract_session_results(session: fastf1.core.Session, event_info: dict, year: int) -> int:
@@ -86,7 +86,7 @@ def _extract_session_results(session: fastf1.core.Session, event_info: dict, yea
     session_id = session.session_info['Key']
     results = results.with_columns(pl.lit(session_id).alias('session_id'))
     results = results.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
-    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/results/{session_id}', filename='results', data=results)   
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/results', filename=f'{session_id}', data=results)   
     return session_id
 
 def _extract_session_laps(session: fastf1.core.Session, event_info: dict, year: int) -> int:
@@ -97,7 +97,7 @@ def _extract_session_laps(session: fastf1.core.Session, event_info: dict, year: 
     session_id = session.session_info['Key']
     laps = laps.with_columns(pl.lit(session_id).alias('session_id'))
     laps = laps.with_columns(pl.lit(session.session_info['Meeting']['Key']).alias('event_id'))
-    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/laps/{session_id}', filename='laps', data=laps)   
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/laps', filename=f'{session_id}', data=laps)
     return session_id
 
 def _extract_session_telemetry(session: fastf1.core.Session, event_info: dict, year: int) -> int:
@@ -111,10 +111,10 @@ def _extract_session_telemetry(session: fastf1.core.Session, event_info: dict, y
         #Telemetry is not available
         return None
     for key in session.car_data.keys():
-        #recast to nullable integer type
-        session.pos_data[key]["X"] = session.pos_data[key]["X"].astype("Int64")
-        session.pos_data[key]["Y"] = session.pos_data[key]["Y"].astype("Int64")
-        session.pos_data[key]["Z"] = session.pos_data[key]["Z"].astype("Int64")
+        #recast to nullable float type to remove dtype warnings
+        session.pos_data[key]["X"] = session.pos_data[key]["X"].astype("Float64")
+        session.pos_data[key]["Y"] = session.pos_data[key]["Y"].astype("Float64")
+        session.pos_data[key]["Z"] = session.pos_data[key]["Z"].astype("Float64")
         car_telemetry = pl.LazyFrame(session.pos_data[key].merge_channels(session.car_data[key]))
         car_telemetry = car_telemetry.with_columns(pl.lit(key).alias('car_number'))
         if telemetry.width:
@@ -123,7 +123,7 @@ def _extract_session_telemetry(session: fastf1.core.Session, event_info: dict, y
             telemetry = car_telemetry
     session_id = session.session_info['Key']
     telemetry = telemetry.with_columns(pl.lit(session_id).alias('session_id'))
-    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/telemetry/{session_id}', filename='telemetry', data=telemetry)   
+    polars_to_parquet(filedir=f'{constants.RAW_FASTF1_PATH}/{year}/telemetry', filename=f'{session_id}', data=telemetry)
     return session_id
 
 def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
