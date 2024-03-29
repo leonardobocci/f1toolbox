@@ -43,8 +43,11 @@ def polars_to_parquet(filedir:str, filename:str, data:Union[pl.DataFrame, pl.Laz
         data.write_parquet(f'{filedir}/{filename}.parquet')
     elif isinstance(data, pl.LazyFrame):
         #streaming not supported for all operations so cannot always use 
-        # data.sink_parquet(f'{filedir}/{filename}.parquet')
-        data.collect().write_parquet(f'{filedir}/{filename}.parquet')
+        try:
+            data.sink_parquet(f'{filedir}/{filename}.parquet')
+        except Exception as e:
+            print(e)
+            data.collect().write_parquet(f'{filedir}/{filename}.parquet')
     else:
         raise NotImplementedError('Data type not supported')
     return
