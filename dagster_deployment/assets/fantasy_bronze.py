@@ -137,7 +137,7 @@ def bronze_fantasy_driver_results(context):
 def bronze_fantasy_current_constructors(context):
     '''Parse landing zone json to parquet file for fantasy current constructor info'''
     created=False
-    constructor_lookup = pl.scan_csv('utils/constructor_mapping.csv')
+    constructor_lookup = pl.scan_csv('utils/map_fantasy/constructor_mapping.csv')
     unique_constructor_list = pl.scan_parquet(f'{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet').select('id', 'color').unique()
     constructor_lookup = unique_constructor_list.join(constructor_lookup, on='id', how='outer')
     constructor_lookup = constructor_lookup.select(pl.coalesce('id', 'id_right').alias('id'), 'name', 'active', 'color')
@@ -155,7 +155,7 @@ def bronze_fantasy_current_constructors(context):
 def bronze_fantasy_current_drivers(context):
     '''Parse landing zone json to parquet file for fantasy current constructor info'''
     created=False
-    drivers_lookup = pl.scan_csv('utils/driver_mapping.csv')
+    drivers_lookup = pl.scan_csv('utils/map_fantasy/driver_mapping.csv')
     unique_driver_list = pl.scan_parquet(f'{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet').select('id', 'color').unique()
     drivers_lookup = unique_driver_list.join(drivers_lookup, on='id', how='outer')
     drivers_lookup = drivers_lookup.select(pl.coalesce('id', 'id_right').alias('id'), 'name', 'active', 'color')
