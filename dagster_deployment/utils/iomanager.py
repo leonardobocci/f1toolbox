@@ -38,6 +38,7 @@ def save_raw_fastf1_json(data:dict, filename:str, year:int=None, subdirectory: s
 
 def polars_to_parquet(filedir:str, filename:str, data:Union[pl.DataFrame, pl.LazyFrame]) -> None:
     '''Write a polars frame to parquet file'''
+
     os.makedirs(filedir, exist_ok=True)
     if isinstance(data, pl.DataFrame):
         data.write_parquet(f'{filedir}/{filename}.parquet')
