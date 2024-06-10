@@ -4,3 +4,4 @@ dagster-postgres
 polars
 pyarrow
 flatdict
+fastf1
