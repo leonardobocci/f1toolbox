@@ -1,0 +1,7 @@
+f1toolbox:
+#https://docs.getdbt.com/docs/core/connect-data-platform/clickhouse-setup
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      schema: f1
