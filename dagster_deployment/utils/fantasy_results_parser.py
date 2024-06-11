@@ -38,6 +38,7 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
         context.log.info(f"Year: {year}")
         with open(f"data/landing/fantasy/{year}/{result_type}_results.json", "r") as f:
             file = json.load(f)
+        all_result_types = None
         for i in range(season_metadata["latest"][f"{result_type}s"]):
             context.log.info(f"{result_type} Number: {i}")
             # Get fantasy points and create dataframe of length of number of races
@@ -139,10 +140,21 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
                     ],
                 )
             )
+            if all_result_types is not None:
+                all_result_types = pl.concat([all_result_types, fantasy])
+                rows = all_result_types.select(pl.len()).collect().item()
+                context.log.info(
+                    f"all_result_types is present. Row count after concat: {rows}"
+                )
+            else:
+                all_result_types = fantasy
+                context.log.info(
+                    f"created all_result_types. Rows: {all_result_types.select(pl.len()).collect().item()}"
+                )
 
         # concatenate all the years
         if not year_created:
-            df = fantasy
+            df = all_result_types
             year_created = True
         else:
             if (
@@ -152,7 +164,7 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
                 context.log.warning(
                     "Using polars concat with diagonal to fill empty columns, due to missing sprint race data..."
                 )
-                df = pl.concat([df, fantasy], how="diagonal")
+                df = pl.concat([df, all_result_types], how="diagonal")
             else:
-                df = pl.concat([df, fantasy])
+                df = pl.concat([df, all_result_types])
     return df
