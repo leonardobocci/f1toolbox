@@ -6,7 +6,8 @@ from assets import (
     fastf1_landing,
     fantasy_silver,
 )
-from dagster import (  # AutoMaterializeRule,
+from dagster import (
+    AutoMaterializeRule,
     AutoMaterializePolicy,
     Definitions,
     load_assets_from_modules,
@@ -16,10 +17,9 @@ from jobs import landing_fantasy_full_job, landing_fastf1_full_job
 from dagster_dbt import DbtCliResource
 
 # Downstream layers are auto materialized whenever the upstream layer is materialized
-# materialization_policy = AutoMaterializePolicy.eager().with_rules(
-#    AutoMaterializeRule.skip_on_not_all_parents_updated() #wait for all parents
-# )
-materialization_policy = AutoMaterializePolicy.eager()
+materialization_policy = AutoMaterializePolicy.eager().with_rules(
+    AutoMaterializeRule.skip_on_not_all_parents_updated(require_update_for_all_parent_partitions=True) #wait for all parents
+ )
 
 landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
