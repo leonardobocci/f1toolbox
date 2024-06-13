@@ -10,7 +10,7 @@ from utils.fastf1_parser import parse_json_signals, parse_parquet_signals
 from utils.iomanager import polars_to_parquet
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_events(context):
     """Parse landing zone fastf1 event details to parquet file"""
     df = parse_json_signals(context, "events")
@@ -21,7 +21,7 @@ def bronze_fastf1_events(context):
     return
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_laps(context):
     """Parse landing zone fastf1 lap details to parquet file"""
     df = parse_parquet_signals(context, "laps")
@@ -32,7 +32,7 @@ def bronze_fastf1_laps(context):
     return
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_results(context):
     """Parse landing zone fastf1 results details to parquet file"""
     df = parse_parquet_signals(context, "results")
@@ -43,7 +43,7 @@ def bronze_fastf1_results(context):
     return
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_sessions(context):
     """Parse landing zone fastf1 sessions details to parquet file"""
     df = parse_json_signals(context, "sessions")
@@ -58,7 +58,7 @@ def bronze_fastf1_sessions(context):
     return
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_telemetry(context):
     """Parse landing zone fastf1 telemetry details to parquet file"""
     df = parse_parquet_signals(context, "telemetry")
@@ -73,7 +73,7 @@ def bronze_fastf1_telemetry(context):
     return
 
 
-@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"])
+@asset(group_name="bronze_fastf1_files", deps=["landing_fastf1_assets"], compute_kind="polars")
 def bronze_fastf1_weathers(context):
     """Parse landing zone fastf1 weathers details to parquet file"""
     df = parse_parquet_signals(context, "weathers")

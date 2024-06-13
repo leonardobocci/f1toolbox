@@ -46,7 +46,7 @@ def format_raw_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     return df1
 
 
-@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_races"])
+@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_races"], compute_kind="polars")
 def bronze_fantasy_rounds(context):
     """Parse landing zone json to parquet file for fantasy race weekend data"""
     created = False
@@ -68,7 +68,7 @@ def bronze_fantasy_rounds(context):
     return
 
 
-@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_constructor_results"])
+@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_constructor_results"], compute_kind="polars")
 def bronze_fantasy_constructor_results(context):
     """Parse landing zone json to parquet file for fantasy constructor results"""
     # Use the generic result parser to parse the driver results
@@ -106,7 +106,7 @@ def bronze_fantasy_constructor_results(context):
     return
 
 
-@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_driver_results"])
+@asset(group_name="bronze_fantasy_files", deps=["landing_fantasy_driver_results"], compute_kind="polars")
 def bronze_fantasy_driver_results(context):
     """Parse landing zone json to parquet file for fantasy driver results"""
     # Use the generic result parser to parse the driver results
@@ -148,6 +148,7 @@ def bronze_fantasy_driver_results(context):
 @asset(
     group_name="bronze_fantasy_files",
     deps=["landing_fantasy_current_assets", "bronze_fantasy_constructor_results"],
+    compute_kind="polars"
 )
 def bronze_fantasy_current_constructors(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
@@ -182,6 +183,7 @@ def bronze_fantasy_current_constructors(context):
 @asset(
     group_name="bronze_fantasy_files",
     deps=["landing_fantasy_current_assets", "bronze_fantasy_driver_results"],
+    compute_kind="polars"
 )
 def bronze_fantasy_current_drivers(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""

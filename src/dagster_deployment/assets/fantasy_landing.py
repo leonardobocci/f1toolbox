@@ -27,7 +27,7 @@ def get_request(url: str, params: dict = None) -> dict:
     return resp_dict
 
 
-@asset(group_name="raw_fantasy_files")
+@asset(group_name="raw_fantasy_files", compute_kind="python")
 def landing_fantasy_current_assets(context):
     """Save raw data from f1fantasytools about current driver and constructor prices in landing zone"""
     curr_assets = get_request(f"{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}")
@@ -39,7 +39,7 @@ def landing_fantasy_current_assets(context):
     return
 
 
-@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions)
+@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions, compute_kind="python")
 def landing_fantasy_constructor_results(context):
     """Save raw data from f1fantasytools about constructor season fantasy points and prices in landing zone"""
     season = context.partition_key
@@ -53,7 +53,7 @@ def landing_fantasy_constructor_results(context):
     return
 
 
-@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions)
+@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions, compute_kind="python")
 def landing_fantasy_driver_results(context):
     """Save raw data from f1fantasytools about driver season fantasy points and prices in landing zone"""
     season = context.partition_key
@@ -67,7 +67,7 @@ def landing_fantasy_driver_results(context):
     return
 
 
-@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions)
+@asset(group_name="raw_fantasy_files", partitions_def=fantasy_partitions, compute_kind="python")
 def landing_fantasy_races(context):
     """Save raw data from f1fantasytools about season races in landing zone"""
     season = context.partition_key
