@@ -192,7 +192,6 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
             session.load(laps=True, telemetry=True, weather=True, messages=False)
             # Collect general event information
             event_info = _extract_event(session, year)
-            extraction_metadata["saved_events"].append(f"{year}_{event_num}")
             context.log.info(f"{year}_{event_num}_{session_num} saved")
             # Collect session information
             saved_session = _extract_session(session, event_info, year)
@@ -221,5 +220,6 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
             else:
                 extraction_metadata["saved_sessions"].append(saved_telemetry_session)
                 context.log.info(f"{year}_{event_num}_{session_num} telemetry saved")
+        extraction_metadata["saved_events"].append(f"{year}_{event_num}")
         event_num += 1
     return extraction_metadata
