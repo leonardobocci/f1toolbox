@@ -144,7 +144,7 @@ def _extract_session_telemetry(
         # Telemetry is not available
         return None
     for key in session.car_data.keys():
-        # recast to nullable float type to remove dtype warnings
+        # recast to Nullable float type to remove dtype warnings
         session.pos_data[key]["X"] = session.pos_data[key]["X"].astype("Float64")
         session.pos_data[key]["Y"] = session.pos_data[key]["Y"].astype("Float64")
         session.pos_data[key]["Z"] = session.pos_data[key]["Z"].astype("Float64")
