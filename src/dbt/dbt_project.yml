@@ -14,7 +14,7 @@ snapshot-paths: ["snapshots"]
 clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
-
+      
 #https://docs.getdbt.com/docs/configuring-models
 models:
   #https://docs.dagster.io/integrations/dbt/reference#emit-column-level-lineage-as-materialization-metadata
@@ -22,9 +22,15 @@ models:
     - "{{ dagster.log_column_level_metadata() }}"
   f1toolbox:
     # Config indicated by + and applies to all files under models/<DIRECTORYNAME FROM YAML NAME>/
-    silver:
+    bronze:
     #https://docs.getdbt.com/docs/build/materializations
     #https://clickhouse.com/blog/clickhouse-dbt-project-introduction-and-webinar#model-types
       +materialized: view
+      fantasy:
+        +group: bronze_fantasy_views
+      fastf1:
+        +group: bronze_fastf1_views
+    silver:
+      +materialized: incremental
     gold:
       +materialized: incremental
