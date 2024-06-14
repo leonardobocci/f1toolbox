@@ -55,7 +55,7 @@ def bronze_fantasy_rounds(context):
         with open(f"{constants.RAW_FANTASY_PATH}/{year}/races.json", "r") as f:
             file = json.load(f)
         temp_df = pl.LazyFrame(file["races"])
-        temp_df = temp_df.with_columns(pl.lit(year).alias("season"))
+        temp_df = temp_df.with_columns(pl.lit(year).cast(pl.Int64).alias("season"))
         if not created:
             df = temp_df
             created = True

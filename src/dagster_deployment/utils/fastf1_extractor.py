@@ -8,7 +8,7 @@ from utils.iomanager import polars_to_parquet
 from utils.iomanager import save_raw_fastf1_json as save_json
 
 
-def _extract_event(session: fastf1.core.Session, year: int) -> dict:
+def _extract_event(session: fastf1.core.Session, year: int, event_num: int, session_num: int) -> dict:
     """Extract event info from a session object and save to landing zone"""
     event = {
         "id": session.session_info["Meeting"]["Key"],
@@ -19,6 +19,9 @@ def _extract_event(session: fastf1.core.Session, year: int) -> dict:
     flat_event = flatdict.FlatDict(event)
     flat_event.set_delimiter("_")
     flat_event = dict(flat_event)
+    flat_event['season'] = year
+    flat_event['round_number'] = event_num
+    flat_event['session_number'] = session_num
     save_json(flat_event, str(event["id"]), year, "events")
     """
     Session Object
@@ -191,7 +194,7 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
                 raise Exception("Fast F1 does not support this session")
             session.load(laps=True, telemetry=True, weather=True, messages=False)
             # Collect general event information
-            event_info = _extract_event(session, year)
+            event_info = _extract_event(session, year, event_num, session_num)
             context.log.info(f"{year}_{event_num}_{session_num} saved")
             # Collect session information
             saved_session = _extract_session(session, event_info, year)

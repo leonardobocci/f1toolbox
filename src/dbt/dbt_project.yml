@@ -31,6 +31,8 @@ models:
       fastf1:
         +group: bronze_fastf1_views
     silver:
-      +materialized: incremental
+      +materialized: table
+      +group: silver_tables
     gold:
       +materialized: incremental
+      +group: gold_denormalized_incremental_views
