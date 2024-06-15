@@ -20,5 +20,5 @@ unioned as (
         * from fantasy_drivers
 )
 
-SELECT * 
+SELECT *
 FROM unioned

@@ -14,7 +14,7 @@ snapshot-paths: ["snapshots"]
 clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
-      
+
 #https://docs.getdbt.com/docs/configuring-models
 models:
   #https://docs.dagster.io/integrations/dbt/reference#emit-column-level-lineage-as-materialization-metadata

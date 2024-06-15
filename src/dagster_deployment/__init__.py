@@ -18,8 +18,10 @@ from dagster_dbt import DbtCliResource
 
 # Downstream layers are auto materialized whenever the upstream layer is materialized
 materialization_policy = AutoMaterializePolicy.eager().with_rules(
-    AutoMaterializeRule.skip_on_not_all_parents_updated(require_update_for_all_parent_partitions=True) #wait for all parents
- )
+    AutoMaterializeRule.skip_on_not_all_parents_updated(
+        require_update_for_all_parent_partitions=True
+    )  # wait for all parents
+)
 
 landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
