@@ -66,6 +66,22 @@ fastf1_joined_fantasy as (
         event_format, has_fantasy_results
     from fastf1_events_sessions_weathers a
     left join fantasy_races b on a.round_number = b.round_number and a.season = b.season
+),
+
+dim_circuits as (
+
+    select * from {{ ref('dim_circuits') }}
+
+),
+
+dim_track_sessions as (
+
+    select
+        a.*,
+        count_slow_corners, count_medium_corners, count_fast_corners, straight_length, count_short_accelerations, count_medium_accelerations, count_long_accelerations
+    from fastf1_joined_fantasy a
+    join dim_circuits b on a.circuit_key = b.circuit_key and a.season = b.season
+
 )
 
-select * from fastf1_joined_fantasy
+select * from dim_track_sessions

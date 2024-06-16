@@ -46,7 +46,7 @@ def _extract_event(
     corners = corners.with_columns(
         ((pl.col("X") - pl.col("x_prev")) ** 2 + (pl.col("Y") - pl.col("y_prev")) ** 2)
         .sqrt()
-        .alias("distance_from_start")
+        .alias("distance_from_last_corner")
     )
     corners = corners.drop(["x_prev", "y_prev"])
     polars_to_parquet(
