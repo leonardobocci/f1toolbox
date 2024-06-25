@@ -38,6 +38,6 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN poetry install
 
-WORKDIR /app/src/dbt
+RUN poetry shell
 
-RUN dbt deps
+RUN cd src/dbt && dbt deps
