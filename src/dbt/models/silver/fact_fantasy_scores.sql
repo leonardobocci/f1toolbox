@@ -2,13 +2,13 @@ with
 
 constructor_scores as (
 
-    select id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_constructor_attributes') }}
+    select result_id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_constructor_attributes') }}
 
 ),
 
 driver_scores as (
 
-    select id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_driver_attributes') }}
+    select result_id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_driver_attributes') }}
 
 ),
 

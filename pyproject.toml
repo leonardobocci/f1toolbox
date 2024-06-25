@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "dagster-deployment"
+version = "0.1.0"
+description = "build dagster docker image deployable on k8s"
+authors = ["leo <leonardobocci99@hotmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10.12,<3.13"
+dagster = "1.7.10"
+dagster-webserver = "1.7.10"
+dagster-dbt = "0.23.10"
+polars = "0.20.31"
+flatdict = "4.0.1"
+pyarrow = "16.1.0"
+fastf1 = "^3.3.8" #only latest ver is supported
+dbt-core = "1.8.3"
+dbt-clickhouse = "1.8.0"
+
+[build-system]
+requires = ["poetry-core>=1.8.3"]

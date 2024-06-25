@@ -6,6 +6,7 @@ import polars as pl
 from assets import constants
 from utils.iomanager import polars_to_parquet
 from utils.iomanager import save_raw_fastf1_json as save_json
+from utils.fastf1_parser import enrich_fastf1_telemetry
 
 
 def _extract_event(
@@ -189,6 +190,19 @@ def _extract_session_telemetry(
             telemetry = car_telemetry
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
+    telemetry = telemetry.with_columns(
+        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2")
+    )
+    telemetry = enrich_fastf1_telemetry(telemetry)
     polars_to_parquet(
         filedir=f"{constants.RAW_FASTF1_PATH}/{year}/telemetry",
         filename=f"{session_id}",
