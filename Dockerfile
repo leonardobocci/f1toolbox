@@ -37,3 +37,7 @@ COPY poetry.lock pyproject.toml ./
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN poetry install
+
+WORKDIR /app/src/dbt
+
+RUN dbt deps
