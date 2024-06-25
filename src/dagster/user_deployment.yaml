@@ -1,0 +1,12 @@
+dagster-user-deployments:
+  enabled: true
+  deployments:
+    - name: "f1toolbox-dagster"
+      image:
+        repository: "leobocci/f1toolbox-dagster"
+        tag: latest
+        pullPolicy: Always
+      dagsterApiGrpcArgs:
+        - "--python-file"
+        - "/app/__init__.py"
+      port: 8081

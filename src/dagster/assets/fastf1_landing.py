@@ -1,0 +1,26 @@
+import os
+import sys
+
+sys.path.append(os.path.abspath("./"))
+
+from dagster import MetadataValue, asset
+from partitions import fast_f1_season_partitions
+from utils.fastf1_extractor import extract_fastf1
+
+
+@asset(
+    group_name="raw_fastf1_files",
+    partitions_def=fast_f1_season_partitions,
+    compute_kind="python",
+)
+def landing_fastf1_assets(context):
+    """Extract all data streams from fasft1 and save to landing zone."""
+    year = context.partition_key
+    meta = extract_fastf1(context, int(year))
+    context.add_output_metadata(
+        {"Number of Saved Events": MetadataValue.int(len(meta["saved_events"]))}
+    )
+    context.add_output_metadata(
+        {"Total number of Events": MetadataValue.int(meta["total_events"])}
+    )
+    return
