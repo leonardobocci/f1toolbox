@@ -37,8 +37,6 @@ RUN poetry install
 
 COPY ./src app/src
 
-RUN echo ls
 WORKDIR /app/src/dbt
-RUN echo ls
 
-RUN poetry run dbt deps
+ENTRYPOINT [ "poetry run dbt deps" ]
