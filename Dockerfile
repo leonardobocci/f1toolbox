@@ -31,15 +31,11 @@ ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
 WORKDIR /app
 
-COPY ./src .
 COPY poetry.lock pyproject.toml ./
-
 RUN curl -sSL https://install.python-poetry.org | python3 -
-
 RUN poetry install
 
+COPY ./src app/src
 WORKDIR /app/src/dbt
-
-RUN ls -la
 
 RUN poetry run dbt deps
