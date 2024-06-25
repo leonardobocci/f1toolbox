@@ -6,10 +6,20 @@ import polars as pl
 from assets import constants
 from utils.iomanager import polars_to_parquet
 from utils.iomanager import save_raw_fastf1_json as save_json
+from utils.fastf1_parser import enrich_fastf1_telemetry
 
 
-def _extract_event(session: fastf1.core.Session, year: int) -> dict:
+def _extract_event(
+    session: fastf1.core.Session, year: int, event_num: int, session_num: int
+) -> dict:
     """Extract event info from a session object and save to landing zone"""
+
+    def extract_circuit_info(year: int, circuit_key: int) -> tuple[pl.DataFrame, int]:
+        circuit_info = fastf1.mvapi.get_circuit_info(year=year, circuit_key=circuit_key)
+        corners = pl.DataFrame(circuit_info.corners)
+        track_map_rotation_degrees = circuit_info.rotation
+        return corners, track_map_rotation_degrees
+
     event = {
         "id": session.session_info["Meeting"]["Key"],
         "name": session.session_info["Meeting"]["Name"],
@@ -19,7 +29,32 @@ def _extract_event(session: fastf1.core.Session, year: int) -> dict:
     flat_event = flatdict.FlatDict(event)
     flat_event.set_delimiter("_")
     flat_event = dict(flat_event)
+    flat_event["season"] = year
+    flat_event["round_number"] = event_num
+    flat_event["session_number"] = session_num
+
+    # Extract circuit information
+    circuit_key = flat_event["Circuit_Key"]
+    corners, track_map_rotation_degrees = extract_circuit_info(year, circuit_key)
+    flat_event["track_map_rotation_degrees"] = track_map_rotation_degrees
+
     save_json(flat_event, str(event["id"]), year, "events")
+    corners = corners.with_columns(pl.lit(year).alias("year"))
+    corners = corners.with_columns(pl.lit(circuit_key).alias("circuit_key"))
+    corners = corners.with_columns(pl.col("X").shift(1, fill_value=0).alias("x_prev"))
+    corners = corners.with_columns(pl.col("Y").shift(1, fill_value=0).alias("y_prev"))
+    # https://en.wikipedia.org/wiki/Euclidean_distance
+    corners = corners.with_columns(
+        ((pl.col("X") - pl.col("x_prev")) ** 2 + (pl.col("Y") - pl.col("y_prev")) ** 2)
+        .sqrt()
+        .alias("distance_from_last_corner")
+    )
+    corners = corners.drop(["x_prev", "y_prev"])
+    polars_to_parquet(
+        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/circuit_corners",
+        filename=f"{circuit_key}",
+        data=corners,
+    )
     """
     Session Object
     ~ if useful
@@ -141,7 +176,7 @@ def _extract_session_telemetry(
         # Telemetry is not available
         return None
     for key in session.car_data.keys():
-        # recast to nullable float type to remove dtype warnings
+        # recast to Nullable float type to remove dtype warnings
         session.pos_data[key]["X"] = session.pos_data[key]["X"].astype("Float64")
         session.pos_data[key]["Y"] = session.pos_data[key]["Y"].astype("Float64")
         session.pos_data[key]["Z"] = session.pos_data[key]["Z"].astype("Float64")
@@ -155,6 +190,19 @@ def _extract_session_telemetry(
             telemetry = car_telemetry
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
+    telemetry = telemetry.with_columns(
+        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1")
+    )
+    telemetry = telemetry.with_columns(
+        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2")
+    )
+    telemetry = enrich_fastf1_telemetry(telemetry)
     polars_to_parquet(
         filedir=f"{constants.RAW_FASTF1_PATH}/{year}/telemetry",
         filename=f"{session_id}",
@@ -171,7 +219,11 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
         "saved_events": [],
         "total_events": 0,
         "saved_sessions": [],
-        "saved_weather_sessions": [],
+        "saved_weathers": [],
+        "saved_laps": [],
+        "saved_telemetry": [],
+        "saved_results": [],
+        "saved_circuits": [],
     }
     event_calendar = fastf1.get_event_schedule(year)
     num_events = len(event_calendar.loc[event_calendar["EventFormat"] != "testing"])
@@ -191,8 +243,7 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
                 raise Exception("Fast F1 does not support this session")
             session.load(laps=True, telemetry=True, weather=True, messages=False)
             # Collect general event information
-            event_info = _extract_event(session, year)
-            extraction_metadata["saved_events"].append(f"{year}_{event_num}")
+            event_info = _extract_event(session, year, event_num, session_num)
             context.log.info(f"{year}_{event_num}_{session_num} saved")
             # Collect session information
             saved_session = _extract_session(session, event_info, year)
@@ -200,15 +251,15 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
             context.log.info(f"{year}_{event_num}_{session_num} session saved")
             # Collect session results
             saved_results_session = _extract_session_results(session, event_info, year)
-            extraction_metadata["saved_sessions"].append(saved_results_session)
+            extraction_metadata["saved_results"].append(saved_results_session)
             context.log.info(f"{year}_{event_num}_{session_num} results saved")
             # Collect event weather data
             saved_weather_session = _extract_session_weather(session, event_info, year)
-            extraction_metadata["saved_weather_sessions"].append(saved_weather_session)
+            extraction_metadata["saved_weathers"].append(saved_weather_session)
             context.log.info(f"{year}_{event_num}_{session_num} weather saved")
             # Collect lap data
             saved_lap_session = _extract_session_laps(session, event_info, year)
-            extraction_metadata["saved_sessions"].append(saved_lap_session)
+            extraction_metadata["saved_laps"].append(saved_lap_session)
             context.log.info(f"{year}_{event_num}_{session_num} laps saved")
             # Collect telemetry data
             saved_telemetry_session = _extract_session_telemetry(
@@ -219,7 +270,8 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
                     f"{year}_{event_num}_{session_num} telemetry not available"
                 )
             else:
-                extraction_metadata["saved_sessions"].append(saved_telemetry_session)
+                extraction_metadata["saved_telemetry"].append(saved_telemetry_session)
                 context.log.info(f"{year}_{event_num}_{session_num} telemetry saved")
+        extraction_metadata["saved_events"].append(f"{year}_{event_num}")
         event_num += 1
     return extraction_metadata

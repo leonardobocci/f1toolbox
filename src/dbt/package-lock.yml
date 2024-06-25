@@ -1,0 +1,5 @@
+packages:
+  - git: https://github.com/dagster-io/dagster.git
+    revision: 989f69d31c359e22de6610aabed834c97f4f66b9
+    subdirectory: python_modules/libraries/dagster-dbt/dbt_packages/dagster
+sha1_hash: f5939e77ff1e743ce9b317bdbe0cc0ef0a9d16a3

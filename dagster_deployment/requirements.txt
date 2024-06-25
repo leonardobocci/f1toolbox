@@ -1,7 +1,0 @@
-dagster
-dagster-webserver
-dagster-postgres
-polars
-pyarrow
-flatdict
-fastf1

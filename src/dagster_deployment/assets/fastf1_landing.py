@@ -8,7 +8,11 @@ from partitions import fast_f1_season_partitions
 from utils.fastf1_extractor import extract_fastf1
 
 
-@asset(group_name="raw_fastf1_files", partitions_def=fast_f1_season_partitions)
+@asset(
+    group_name="raw_fastf1_files",
+    partitions_def=fast_f1_season_partitions,
+    compute_kind="python",
+)
 def landing_fastf1_assets(context):
     """Extract all data streams from fasft1 and save to landing zone."""
     year = context.partition_key

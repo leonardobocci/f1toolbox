@@ -1,0 +1,1 @@
+SELECT id as event_id,name as event_name,Country_Key as country_key,Country_Code as country_code,Circuit_Key as circuit_key,Circuit_ShortName as circuit_shortname,season,round_number,session_number FROM file('fastf1/events.parquet', 'Parquet')

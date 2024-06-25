@@ -1,0 +1,4 @@
+packages:
+  - git: "https://github.com/dagster-io/dagster.git"
+    subdirectory: "python_modules/libraries/dagster-dbt/dbt_packages/dagster"
+    revision: 1.7.9 # replace with the version of `dagster` you are using.
