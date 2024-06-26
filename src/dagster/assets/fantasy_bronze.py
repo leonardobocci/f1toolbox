@@ -65,7 +65,12 @@ def bronze_fantasy_rounds(context):
             created = True
         else:
             df = pl.concat([df, temp_df])
-    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename="races", data=df)
+    polars_to_parquet(
+        filedir=constants.BRONZE_FANTASY_PATH,
+        filename="races",
+        data=df,
+        context=context,
+    )
     meta = parquet_metadata(f"{constants.BRONZE_FANTASY_PATH}/races.parquet").to_dict()
     context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
     context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
@@ -86,6 +91,7 @@ def bronze_fantasy_constructor_results(context):
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="constructor_fantasy_attributes",
         data=df,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
@@ -128,6 +134,7 @@ def bronze_fantasy_driver_results(context):
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="driver_fantasy_attributes",
         data=df,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
@@ -183,6 +190,7 @@ def bronze_fantasy_current_constructors(context):
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="constructors",
         data=constructors,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/constructors.parquet"
@@ -213,7 +221,10 @@ def bronze_fantasy_current_drivers(context):
     )
     drivers = format_raw_df("drivers", drivers_lookup)
     polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH, filename="drivers", data=drivers
+        filedir=constants.BRONZE_FANTASY_PATH,
+        filename="drivers",
+        data=drivers,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/drivers.parquet"
