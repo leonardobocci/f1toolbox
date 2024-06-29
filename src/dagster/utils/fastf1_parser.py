@@ -94,13 +94,59 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         return results
 
     def get_car_lateral_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        results = df.with_columns(
-            (pl.col("Speed").pow(2) / pl.col("radius")).alias("lateral_acceleration")
+        # convert to meters per second and meters
+        # https://docs.fastf1.dev/core.html#telemetry for column units of measurements
+        selection = df.columns
+        df = df.with_columns(
+            [
+                (pl.col("Speed") / 3.6).alias("ms_speed"),
+                (pl.col("radius") * 10).alias("m_radius"),
+            ]
         )
+        # acceleration in m/s^2
+        df = df.with_columns(
+            (pl.col("ms_speed").pow(2) / pl.col("m_radius")).alias(
+                "lateral_acceleration"
+            )
+        )
+        results = df.select([*selection, pl.col("lateral_acceleration")])
+        # divide by 9.80665 to get g's
         context.log.debug("Added lateral acceleration.")
         return results
 
+    def get_car_longitudinal_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
+        selection = df.columns
+        df = df.with_columns(
+            [
+                (pl.col("Speed") / 3.6).alias("ms_speed"),
+                (pl.col("SessionTime") / 1e6).alias("s_time"),
+            ]
+        )
+        df = df.with_columns(
+            pl.col("s_time").diff().alias("delta_time"),
+            pl.col("ms_speed").diff().alias("delta_speed"),
+        )
+        df = df.with_columns(
+            (pl.col("delta_speed") / pl.col("delta_time")).alias(
+                "longitudinal_acceleration"
+            )
+        )
+        results = df.select([*selection, pl.col("longitudinal_acceleration")])
+        # divide by 9.80665 to get g's
+        context.log.debug("Added longitudinal acceleration.")
+        return results
+
+    selection = df.columns
     df = get_circle_center(context, df)
     df = get_circle_radius(context, df)
     df = get_car_lateral_load(context, df)
-    return df
+    df = get_car_longitudinal_load(context, df)
+    results = df.select(
+        [*selection, "lateral_acceleration", "longitudinal_acceleration"]
+    )
+    results = results.select(pl.exclude("x_prev_1", "y_prev_1", "x_prev_2", "y_prev_2"))
+    return results
+
+
+def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    pass
