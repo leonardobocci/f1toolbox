@@ -34,16 +34,19 @@ def format_raw_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     returns pl.DataFrame
     """
     file, last_modified_expr = read_landing_fantasy_assets()
-    df = pl.LazyFrame(file["constructors"])
+    df = pl.LazyFrame(file[asset_type])
     df = df.with_columns((last_modified_expr).alias("last_updated"))
-    df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="outer")
+    df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="full")
     df1 = df1.select(
         *set(lookup_df.columns) - set(["id", "color"]),
         pl.coalesce("id", "abbreviation").alias("id"),
         pl.coalesce("color", "color_right").alias("color"),
         pl.col("last_updated").fill_null(strategy="min"),
     )
-    return df1
+    #this collect should not be required,
+    #but without it there is a weird columnnotfound: abbreviation
+    #note this occurs also if calling collect(streaming=True)
+    return df1.collect()
 
 
 @asset(
@@ -180,7 +183,7 @@ def bronze_fantasy_current_constructors(context):
         .unique()
     )
     constructor_lookup = unique_constructor_list.join(
-        constructor_lookup, on="id", how="outer"
+        constructor_lookup, on="id", how="full"
     )
     constructor_lookup = constructor_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
@@ -215,7 +218,7 @@ def bronze_fantasy_current_drivers(context):
         .select("id", "color")
         .unique()
     )
-    drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="outer")
+    drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="full")
     drivers_lookup = drivers_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
     )

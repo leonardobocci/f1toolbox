@@ -196,16 +196,12 @@ def _extract_session_telemetry(
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
     telemetry = telemetry.with_columns(
-        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1")
-    )
-    telemetry = telemetry.with_columns(
-        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2")
-    )
-    telemetry = telemetry.with_columns(
-        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1")
-    )
-    telemetry = telemetry.with_columns(
-        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2")
+        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1"),
+        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2"),
+        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1"),
+        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2"),
+        pl.col("SessionTime").diff().alias("delta_time"),
+        pl.col("Speed").diff().alias("delta_speed"),
     )
     polars_to_parquet(
         filedir=f"{constants.RAW_FASTF1_PATH}/{year}/telemetry",

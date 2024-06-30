@@ -118,16 +118,13 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         selection = df.columns
         df = df.with_columns(
             [
-                (pl.col("Speed") / 3.6).alias("ms_speed"),
-                (pl.col("SessionTime") / 1e6).alias("s_time"),
+                (pl.col("Speed") / 3.6).alias("delta_ms_speed"),
+                #TODO: fix calculation of delta time unit of measurement
+                (pl.col("delta_time") / 1e6).alias("delta_s_time"),
             ]
         )
         df = df.with_columns(
-            pl.col("s_time").diff().alias("delta_time"),
-            pl.col("ms_speed").diff().alias("delta_speed"),
-        )
-        df = df.with_columns(
-            (pl.col("delta_speed") / pl.col("delta_time")).alias(
+            (pl.col("delta_ms_speed") / pl.col("delta_s_time")).alias(
                 "longitudinal_acceleration"
             )
         )
@@ -149,4 +146,9 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    '''
+    TODO: 
+    eliminate outliers (winsorize)
+    calculate acceleration scores (per session, to eliminate changing conditions)
+    '''
     pass
