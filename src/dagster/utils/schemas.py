@@ -4,7 +4,7 @@ season_metadata = {
 }
 
 driver_schema_contract = {
-    "base_keys": ["abbreviation", "color", "constructor", "race_results"],
+    "base_keys": ["abbreviation", "color", "driver", "race_results"],
     "fantasy_results_expectations": {
         "id": "weekend_current_points",
         "len": 16,
