@@ -5,7 +5,7 @@ import flatdict
 import polars as pl
 from assets import constants
 from utils.iomanager import polars_to_parquet
-from utils.iomanager import save_raw_fastf1_json as save_json
+from utils.iomanager import save_landing_fastf1_json as save_json
 
 
 def _extract_event(
@@ -50,7 +50,7 @@ def _extract_event(
     )
     corners = corners.drop(["x_prev", "y_prev"])
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/circuit_corners",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/circuit_corners",
         filename=f"{circuit_key}",
         data=corners,
         context=context,
@@ -118,7 +118,7 @@ def _extract_session_weather(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/weathers",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/weathers",
         filename=f"{session_id}",
         data=weather,
         context=context,
@@ -139,7 +139,7 @@ def _extract_session_results(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/results",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/results",
         filename=f"{session_id}",
         data=results,
         context=context,
@@ -160,7 +160,7 @@ def _extract_session_laps(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/laps",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/laps",
         filename=f"{session_id}",
         data=laps,
         context=context,
@@ -204,7 +204,7 @@ def _extract_session_telemetry(
         pl.col("Speed").diff().alias("delta_speed"),
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/telemetry",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/telemetry",
         filename=f"{session_id}",
         data=telemetry,
         context=context,

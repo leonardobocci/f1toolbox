@@ -119,7 +119,6 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         df = df.with_columns(
             [
                 (pl.col("Speed") / 3.6).alias("delta_ms_speed"),
-                #TODO: fix calculation of delta time unit of measurement
                 (pl.col("delta_time") / 1e6).alias("delta_s_time"),
             ]
         )

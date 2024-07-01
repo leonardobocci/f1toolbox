@@ -18,27 +18,27 @@ def _save_generic_json(data: dict, filename: str, filedir: str) -> None:
     return
 
 
-def save_raw_fantasy_json(data: dict, filename: str, year: int = None) -> None:
+def save_landing_fantasy_json(data: dict, filename: str, year: int = None) -> None:
     """Save the raw data extracted from the Fantasy APIs as json files"""
     if year:
-        raw_fantasy_dir = f"{constants.RAW_FANTASY_PATH}/{year}"
+        landing_fantasy_dir = f"{constants.landing_FANTASY_PATH}/{year}"
     else:
-        raw_fantasy_dir = f"{constants.RAW_FANTASY_PATH}/"
-    _save_generic_json(data, filename, raw_fantasy_dir)
+        landing_fantasy_dir = f"{constants.landing_FANTASY_PATH}/"
+    _save_generic_json(data, filename, landing_fantasy_dir)
     return
 
 
-def save_raw_fastf1_json(
+def save_landing_fastf1_json(
     data: dict, filename: str, year: int = None, subdirectory: str = None
 ) -> None:
     """Save the raw data extracted from the FastF1 APIs as json files"""
     if year:
-        raw_fastf1_dir = f"{constants.RAW_FASTF1_PATH}/{year}"
+        landing_fastf1_dir = f"{constants.landing_FASTF1_PATH}/{year}"
     else:
-        raw_fastf1_dir = f"{constants.RAW_FASTF1_PATH}/"
+        landing_fastf1_dir = f"{constants.landing_FASTF1_PATH}/"
     if subdirectory:
-        raw_fastf1_dir = f"{raw_fastf1_dir}/{subdirectory}"
-    _save_generic_json(data, filename, raw_fastf1_dir)
+        landing_fastf1_dir = f"{landing_fastf1_dir}/{subdirectory}"
+    _save_generic_json(data, filename, landing_fastf1_dir)
     return
 
 

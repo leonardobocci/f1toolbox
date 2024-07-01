@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath("./"))
 import requests
 from dagster import MetadataValue, asset
 from partitions import fantasy_partitions
-from utils.iomanager import save_raw_fantasy_json as save_json
+from utils.iomanager import save_landing_fantasy_json as save_json
 
 BASE_FANTASY_URL = "https://f1fantasytoolsapi-szumjzgxfa-ew.a.run.app"
 FANTASY_ASSETS_ENDPOINT = "asset-info/init"
@@ -27,7 +27,7 @@ def get_request(url: str, params: dict = None) -> dict:
     return resp_dict
 
 
-@asset(group_name="raw_fantasy_files", compute_kind="python")
+@asset(group_name="landing_fantasy_files", compute_kind="python")
 def landing_fantasy_current_assets(context):
     """Save raw data from f1fantasytools about current driver and constructor prices in landing zone"""
     curr_assets = get_request(f"{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}")
@@ -40,7 +40,7 @@ def landing_fantasy_current_assets(context):
 
 
 @asset(
-    group_name="raw_fantasy_files",
+    group_name="landing_fantasy_files",
     partitions_def=fantasy_partitions,
     compute_kind="python",
 )
@@ -58,7 +58,7 @@ def landing_fantasy_constructor_results(context):
 
 
 @asset(
-    group_name="raw_fantasy_files",
+    group_name="landing_fantasy_files",
     partitions_def=fantasy_partitions,
     compute_kind="python",
 )
@@ -76,7 +76,7 @@ def landing_fantasy_driver_results(context):
 
 
 @asset(
-    group_name="raw_fantasy_files",
+    group_name="landing_fantasy_files",
     partitions_def=fantasy_partitions,
     compute_kind="python",
 )

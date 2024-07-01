@@ -15,16 +15,16 @@ from utils.iomanager import polars_to_parquet
 
 
 def read_landing_fantasy_assets():
-    with open(f"{constants.RAW_FANTASY_PATH}/current_fantasy_assets.json", "r") as f:
+    with open(f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json", "r") as f:
         file = json.load(f)
     last_modified = os.path.getmtime(
-        f"{constants.RAW_FANTASY_PATH}/current_fantasy_assets.json"
+        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json"
     )
     last_modified_expr = pl.from_epoch(pl.lit(last_modified))
     return file, last_modified_expr
 
 
-def format_raw_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
+def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     """Format the constructors and drivers dataframes
 
     arguments:
@@ -59,7 +59,7 @@ def bronze_fantasy_rounds(context):
     created = False
     for year in years:
         context.log.info(f"Year: {year}")
-        with open(f"{constants.RAW_FANTASY_PATH}/{year}/races.json", "r") as f:
+        with open(f"{constants.landing_FANTASY_PATH}/{year}/races.json", "r") as f:
             file = json.load(f)
         temp_df = pl.LazyFrame(file["races"])
         temp_df = temp_df.with_columns(pl.lit(year).cast(pl.Int64).alias("season"))
@@ -188,7 +188,7 @@ def bronze_fantasy_current_constructors(context):
     constructor_lookup = constructor_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
     )
-    constructors = format_raw_df("constructors", constructor_lookup)
+    constructors = format_landing_df("constructors", constructor_lookup)
     polars_to_parquet(
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="constructors",
@@ -222,7 +222,7 @@ def bronze_fantasy_current_drivers(context):
     drivers_lookup = drivers_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
     )
-    drivers = format_raw_df("drivers", drivers_lookup)
+    drivers = format_landing_df("drivers", drivers_lookup)
     polars_to_parquet(
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="drivers",
