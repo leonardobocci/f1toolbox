@@ -3,7 +3,7 @@ import os
 from typing import Union
 
 import polars as pl
-from assets import constants
+from src.dagster.assets import constants
 
 
 def _save_generic_json(data: dict, filename: str, filedir: str) -> None:

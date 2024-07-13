@@ -1,11 +1,8 @@
 import os
-import sys
-
-sys.path.append(os.path.abspath("./"))
 
 from dagster import MetadataValue, asset
-from partitions import fast_f1_season_partitions
-from utils.fastf1_extractor import extract_fastf1
+from src.dagster.partitions import fast_f1_season_partitions
+from src.dagster.utils.fastf1_extractor import extract_fastf1
 
 
 @asset(

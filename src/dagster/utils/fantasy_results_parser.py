@@ -1,13 +1,10 @@
 import os
-import sys
-
-sys.path.append(os.path.abspath("./"))
 
 import json
 
 import polars as pl
-from assets.constants import YEARS as years
-from utils.schemas import season_metadata
+from src.dagster.assets.constants import YEARS as years
+from src.dagster.utils.schemas import season_metadata
 
 
 def parse_results(context, result_type: str) -> pl.DataFrame:
@@ -24,13 +21,13 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
     for year in years:
         # These imports happen inside the loop to reset schema contracts override logic which happens year-to-year
         if result_type == "driver":
-            from utils.schemas import driver_schema_contract as schema_contract
-            from utils.schemas import (
+            from src.dagster.utils.schemas import driver_schema_contract as schema_contract
+            from src.dagster.utils.schemas import (
                 driver_schema_contract_no_sprints as schema_contract_no_sprints,
             )
         elif result_type == "constructor":
-            from utils.schemas import constructor_schema_contract as schema_contract
-            from utils.schemas import (
+            from src.dagster.utils.schemas import constructor_schema_contract as schema_contract
+            from src.dagster.utils.schemas import (
                 constructor_schema_contract_no_sprints as schema_contract_no_sprints,
             )
         else:

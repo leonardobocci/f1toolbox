@@ -1,5 +1,6 @@
 import os
-from assets import (
+
+from src.dagster.assets import (
     fantasy_bronze,
     fantasy_landing,
     fastf1_bronze,
@@ -12,8 +13,8 @@ from dagster import (
     Definitions,
     load_assets_from_modules,
 )
-from assets.constants import dbt_project_dir
-from jobs import landing_fantasy_full_job, landing_fastf1_full_job
+from src.dagster.assets.constants import dbt_project_dir
+from src.dagster.jobs import landing_fantasy_full_job, landing_fastf1_full_job
 from dagster_dbt import DbtCliResource
 
 # Downstream layers are auto materialized whenever the upstream layer is materialized

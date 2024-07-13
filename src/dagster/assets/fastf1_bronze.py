@@ -1,17 +1,14 @@
 import os
-import sys
 
-sys.path.append(os.path.abspath("./"))
-
-from assets import constants
+from src.dagster.assets import constants
 from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata
-from utils.fastf1_parser import (
+from src.dagster.utils.fastf1_parser import (
     parse_json_signals,
     parse_parquet_signals,
     enrich_fastf1_telemetry,
 )
-from utils.iomanager import polars_to_parquet
+from src.dagster.utils.iomanager import polars_to_parquet
 
 
 @asset(

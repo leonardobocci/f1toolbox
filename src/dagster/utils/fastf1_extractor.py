@@ -3,9 +3,9 @@ from datetime import datetime
 import fastf1
 import flatdict
 import polars as pl
-from assets import constants
-from utils.iomanager import polars_to_parquet
-from utils.iomanager import save_landing_fastf1_json as save_json
+from src.dagster.assets import constants
+from src.dagster.utils.iomanager import polars_to_parquet
+from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
 
 
 def _extract_event(
