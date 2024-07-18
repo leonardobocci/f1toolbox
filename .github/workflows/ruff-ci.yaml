@@ -1,5 +1,5 @@
-name: Ruff CI
-on: 
+name: ruff-ci
+on:
   pull_request:
     branches:
       - main
@@ -13,7 +13,7 @@ jobs:
       # Give the default GITHUB_TOKEN write permission to commit and push the
       # added or changed files to the repository.
       contents: write
-    
+
     steps:
       - uses: actions/checkout@v4
       - name: Install Python
