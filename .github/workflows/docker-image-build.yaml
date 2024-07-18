@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: docker-image-build
     runs-on: ubuntu-latest
     steps:
       -
