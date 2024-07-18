@@ -12,10 +12,10 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.8
     hooks:
+      - id: ruff-format
+        name: ruff formatter
+        #exclude: test_example_module.py|run_pipeline.py
       - id: ruff
         args: [ --fix ]
         name: ruff linter
-        #exclude: test_example_module.py|run_pipeline.py
-      - id: ruff-format
-        name: ruff formatter
         #exclude: test_example_module.py|run_pipeline.py

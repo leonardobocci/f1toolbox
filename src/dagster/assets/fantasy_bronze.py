@@ -1,30 +1,29 @@
 import os
-import sys
-
-sys.path.append(os.path.abspath("./"))
 
 import json
 
 import polars as pl
-from assets import constants
-from assets.constants import YEARS as years
+from src.dagster.assets import constants
+from src.dagster.assets.constants import YEARS as years
 from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata
-from utils.fantasy_results_parser import parse_results
-from utils.iomanager import polars_to_parquet
+from src.dagster.utils.fantasy_results_parser import parse_results
+from src.dagster.utils.iomanager import polars_to_parquet
 
 
 def read_landing_fantasy_assets():
-    with open(f"{constants.RAW_FANTASY_PATH}/current_fantasy_assets.json", "r") as f:
+    with open(
+        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json", "r"
+    ) as f:
         file = json.load(f)
     last_modified = os.path.getmtime(
-        f"{constants.RAW_FANTASY_PATH}/current_fantasy_assets.json"
+        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json"
     )
     last_modified_expr = pl.from_epoch(pl.lit(last_modified))
     return file, last_modified_expr
 
 
-def format_raw_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
+def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     """Format the constructors and drivers dataframes
 
     arguments:
@@ -34,16 +33,19 @@ def format_raw_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     returns pl.DataFrame
     """
     file, last_modified_expr = read_landing_fantasy_assets()
-    df = pl.LazyFrame(file["constructors"])
+    df = pl.LazyFrame(file[asset_type])
     df = df.with_columns((last_modified_expr).alias("last_updated"))
-    df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="outer")
+    df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="full")
     df1 = df1.select(
         *set(lookup_df.columns) - set(["id", "color"]),
         pl.coalesce("id", "abbreviation").alias("id"),
         pl.coalesce("color", "color_right").alias("color"),
         pl.col("last_updated").fill_null(strategy="min"),
     )
-    return df1
+    # this collect should not be required,
+    # but without it there is a weird columnnotfound: abbreviation
+    # note this occurs also if calling collect(streaming=True)
+    return df1.collect()
 
 
 @asset(
@@ -56,7 +58,7 @@ def bronze_fantasy_rounds(context):
     created = False
     for year in years:
         context.log.info(f"Year: {year}")
-        with open(f"{constants.RAW_FANTASY_PATH}/{year}/races.json", "r") as f:
+        with open(f"{constants.landing_FANTASY_PATH}/{year}/races.json", "r") as f:
             file = json.load(f)
         temp_df = pl.LazyFrame(file["races"])
         temp_df = temp_df.with_columns(pl.lit(year).cast(pl.Int64).alias("season"))
@@ -65,7 +67,12 @@ def bronze_fantasy_rounds(context):
             created = True
         else:
             df = pl.concat([df, temp_df])
-    polars_to_parquet(filedir=constants.BRONZE_FANTASY_PATH, filename="races", data=df)
+    polars_to_parquet(
+        filedir=constants.BRONZE_FANTASY_PATH,
+        filename="races",
+        data=df,
+        context=context,
+    )
     meta = parquet_metadata(f"{constants.BRONZE_FANTASY_PATH}/races.parquet").to_dict()
     context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
     context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
@@ -86,6 +93,7 @@ def bronze_fantasy_constructor_results(context):
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="constructor_fantasy_attributes",
         data=df,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
@@ -128,6 +136,7 @@ def bronze_fantasy_driver_results(context):
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="driver_fantasy_attributes",
         data=df,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
@@ -164,7 +173,9 @@ def bronze_fantasy_driver_results(context):
 )
 def bronze_fantasy_current_constructors(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
-    constructor_lookup = pl.scan_csv("utils/map_fantasy/constructor_mapping.csv")
+    constructor_lookup = pl.scan_csv(
+        "src/dagster/utils/map_fantasy/constructor_mapping.csv"
+    )
     unique_constructor_list = (
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
@@ -173,16 +184,17 @@ def bronze_fantasy_current_constructors(context):
         .unique()
     )
     constructor_lookup = unique_constructor_list.join(
-        constructor_lookup, on="id", how="outer"
+        constructor_lookup, on="id", how="full"
     )
     constructor_lookup = constructor_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
     )
-    constructors = format_raw_df("constructors", constructor_lookup)
+    constructors = format_landing_df("constructors", constructor_lookup)
     polars_to_parquet(
         filedir=constants.BRONZE_FANTASY_PATH,
         filename="constructors",
         data=constructors,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/constructors.parquet"
@@ -199,7 +211,7 @@ def bronze_fantasy_current_constructors(context):
 )
 def bronze_fantasy_current_drivers(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
-    drivers_lookup = pl.scan_csv("utils/map_fantasy/driver_mapping.csv")
+    drivers_lookup = pl.scan_csv("src/dagster/utils/map_fantasy/driver_mapping.csv")
     unique_driver_list = (
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
@@ -207,13 +219,16 @@ def bronze_fantasy_current_drivers(context):
         .select("id", "color")
         .unique()
     )
-    drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="outer")
+    drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="full")
     drivers_lookup = drivers_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
     )
-    drivers = format_raw_df("drivers", drivers_lookup)
+    drivers = format_landing_df("drivers", drivers_lookup)
     polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH, filename="drivers", data=drivers
+        filedir=constants.BRONZE_FANTASY_PATH,
+        filename="drivers",
+        data=drivers,
+        context=context,
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FANTASY_PATH}/drivers.parquet"

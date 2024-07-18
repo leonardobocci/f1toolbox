@@ -3,14 +3,13 @@ from datetime import datetime
 import fastf1
 import flatdict
 import polars as pl
-from assets import constants
-from utils.iomanager import polars_to_parquet
-from utils.iomanager import save_raw_fastf1_json as save_json
-from utils.fastf1_parser import enrich_fastf1_telemetry
+from src.dagster.assets import constants
+from src.dagster.utils.iomanager import polars_to_parquet
+from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
 
 
 def _extract_event(
-    session: fastf1.core.Session, year: int, event_num: int, session_num: int
+    context, session: fastf1.core.Session, year: int, event_num: int, session_num: int
 ) -> dict:
     """Extract event info from a session object and save to landing zone"""
 
@@ -51,9 +50,10 @@ def _extract_event(
     )
     corners = corners.drop(["x_prev", "y_prev"])
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/circuit_corners",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/circuit_corners",
         filename=f"{circuit_key}",
         data=corners,
+        context=context,
     )
     """
     Session Object
@@ -86,7 +86,9 @@ def _extract_event(
     return flat_event
 
 
-def _extract_session(session: fastf1.core.Session, event_info: dict, year: int) -> int:
+def _extract_session(
+    context, session: fastf1.core.Session, event_info: dict, year: int
+) -> int:
     """Extract session data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -104,7 +106,7 @@ def _extract_session(session: fastf1.core.Session, event_info: dict, year: int) 
 
 
 def _extract_session_weather(
-    session: fastf1.core.Session, event_info: dict, year: int
+    context, session: fastf1.core.Session, event_info: dict, year: int
 ) -> int:
     """Extract weather data from a session object and save to landing zone (parquet).
     The file path includes the session id.
@@ -116,15 +118,16 @@ def _extract_session_weather(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/weathers",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/weathers",
         filename=f"{session_id}",
         data=weather,
+        context=context,
     )
     return session_id
 
 
 def _extract_session_results(
-    session: fastf1.core.Session, event_info: dict, year: int
+    context, session: fastf1.core.Session, event_info: dict, year: int
 ) -> int:
     """Extract results data from a session object and save to landing zone (parquet).
     The file path includes the session id.
@@ -136,15 +139,16 @@ def _extract_session_results(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/results",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/results",
         filename=f"{session_id}",
         data=results,
+        context=context,
     )
     return session_id
 
 
 def _extract_session_laps(
-    session: fastf1.core.Session, event_info: dict, year: int
+    context, session: fastf1.core.Session, event_info: dict, year: int
 ) -> int:
     """Extract lap data from a session object and save to landing zone (parquet).
     The file path includes the session id.
@@ -156,15 +160,16 @@ def _extract_session_laps(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/laps",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/laps",
         filename=f"{session_id}",
         data=laps,
+        context=context,
     )
     return session_id
 
 
 def _extract_session_telemetry(
-    session: fastf1.core.Session, event_info: dict, year: int
+    context, session: fastf1.core.Session, event_info: dict, year: int
 ) -> int:
     """Extract telemetry data from a session object and save to landing zone (parquet).
     The file path includes the session id.
@@ -191,22 +196,18 @@ def _extract_session_telemetry(
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
     telemetry = telemetry.with_columns(
-        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1")
+        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1"),
+        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2"),
+        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1"),
+        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2"),
+        pl.col("SessionTime").diff().alias("delta_time"),
+        pl.col("Speed").diff().alias("delta_speed"),
     )
-    telemetry = telemetry.with_columns(
-        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2")
-    )
-    telemetry = telemetry.with_columns(
-        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1")
-    )
-    telemetry = telemetry.with_columns(
-        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2")
-    )
-    telemetry = enrich_fastf1_telemetry(telemetry)
     polars_to_parquet(
-        filedir=f"{constants.RAW_FASTF1_PATH}/{year}/telemetry",
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/telemetry",
         filename=f"{session_id}",
         data=telemetry,
+        context=context,
     )
     return session_id
 
@@ -243,27 +244,33 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
                 raise Exception("Fast F1 does not support this session")
             session.load(laps=True, telemetry=True, weather=True, messages=False)
             # Collect general event information
-            event_info = _extract_event(session, year, event_num, session_num)
+            event_info = _extract_event(context, session, year, event_num, session_num)
             context.log.info(f"{year}_{event_num}_{session_num} saved")
             # Collect session information
-            saved_session = _extract_session(session, event_info, year)
+            saved_session = _extract_session(context, session, event_info, year)
             extraction_metadata["saved_sessions"].append(saved_session)
             context.log.info(f"{year}_{event_num}_{session_num} session saved")
             # Collect session results
-            saved_results_session = _extract_session_results(session, event_info, year)
+            saved_results_session = _extract_session_results(
+                context, session, event_info, year
+            )
             extraction_metadata["saved_results"].append(saved_results_session)
             context.log.info(f"{year}_{event_num}_{session_num} results saved")
             # Collect event weather data
-            saved_weather_session = _extract_session_weather(session, event_info, year)
+            saved_weather_session = _extract_session_weather(
+                context, session, event_info, year
+            )
             extraction_metadata["saved_weathers"].append(saved_weather_session)
             context.log.info(f"{year}_{event_num}_{session_num} weather saved")
             # Collect lap data
-            saved_lap_session = _extract_session_laps(session, event_info, year)
+            saved_lap_session = _extract_session_laps(
+                context, session, event_info, year
+            )
             extraction_metadata["saved_laps"].append(saved_lap_session)
             context.log.info(f"{year}_{event_num}_{session_num} laps saved")
             # Collect telemetry data
             saved_telemetry_session = _extract_session_telemetry(
-                session, event_info, year
+                context, session, event_info, year
             )
             if not saved_telemetry_session:
                 context.log.warning(
