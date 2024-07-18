@@ -7,11 +7,19 @@ on:
 jobs:
   security:
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk to check for vulnerabilities in dependencies
         uses: snyk/actions/python@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          command: monitor
+          command: test
+      - name: Run Snyk to check for vulnerabilities in code
+        uses: snyk/actions/python@master
+        with:
+          command: code test
+      - name: Run Snyk to check for vulnerabilities in container images
+        uses: snyk/actions/python@master
+        with:
+          command: container test
