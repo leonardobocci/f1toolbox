@@ -23,6 +23,7 @@ scipy = "^1.14.0"
 pytest = "^8.2.2"
 ipykernel = "^6.29.5"
 ruff = "^0.5.2"
+pre-commit = "^3.7.1"
 
 [build-system]
 requires = ["poetry-core>=1.8.3"]
