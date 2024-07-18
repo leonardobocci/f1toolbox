@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "dagster-deployment"
+name = "f1toolbox"
 version = "0.1.0"
-description = "build dagster docker image deployable on k8s"
+description = "formula 1 telemetry and fantasy"
 authors = ["leo <leonardobocci99@hotmail.com>"]
 readme = "README.md"
 package-mode = false
