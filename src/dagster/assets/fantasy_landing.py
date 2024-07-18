@@ -1,5 +1,3 @@
-import os
-
 import requests
 from dagster import MetadataValue, asset
 from src.dagster.partitions import fantasy_partitions

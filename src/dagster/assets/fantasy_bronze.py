@@ -12,7 +12,9 @@ from src.dagster.utils.iomanager import polars_to_parquet
 
 
 def read_landing_fantasy_assets():
-    with open(f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json", "r") as f:
+    with open(
+        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json", "r"
+    ) as f:
         file = json.load(f)
     last_modified = os.path.getmtime(
         f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json"
@@ -40,9 +42,9 @@ def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
         pl.coalesce("color", "color_right").alias("color"),
         pl.col("last_updated").fill_null(strategy="min"),
     )
-    #this collect should not be required,
-    #but without it there is a weird columnnotfound: abbreviation
-    #note this occurs also if calling collect(streaming=True)
+    # this collect should not be required,
+    # but without it there is a weird columnnotfound: abbreviation
+    # note this occurs also if calling collect(streaming=True)
     return df1.collect()
 
 
@@ -171,7 +173,9 @@ def bronze_fantasy_driver_results(context):
 )
 def bronze_fantasy_current_constructors(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
-    constructor_lookup = pl.scan_csv("utils/map_fantasy/constructor_mapping.csv")
+    constructor_lookup = pl.scan_csv(
+        "src/dagster/utils/map_fantasy/constructor_mapping.csv"
+    )
     unique_constructor_list = (
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
@@ -207,7 +211,7 @@ def bronze_fantasy_current_constructors(context):
 )
 def bronze_fantasy_current_drivers(context):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
-    drivers_lookup = pl.scan_csv("utils/map_fantasy/driver_mapping.csv")
+    drivers_lookup = pl.scan_csv("src/dagster/utils/map_fantasy/driver_mapping.csv")
     unique_driver_list = (
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"

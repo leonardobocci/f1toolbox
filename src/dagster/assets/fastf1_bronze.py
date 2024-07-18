@@ -1,5 +1,3 @@
-import os
-
 from src.dagster.assets import constants
 from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata

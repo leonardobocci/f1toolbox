@@ -1,5 +1,3 @@
-import os
-
 import json
 
 import polars as pl
@@ -21,12 +19,16 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
     for year in years:
         # These imports happen inside the loop to reset schema contracts override logic which happens year-to-year
         if result_type == "driver":
-            from src.dagster.utils.schemas import driver_schema_contract as schema_contract
+            from src.dagster.utils.schemas import (
+                driver_schema_contract as schema_contract,
+            )
             from src.dagster.utils.schemas import (
                 driver_schema_contract_no_sprints as schema_contract_no_sprints,
             )
         elif result_type == "constructor":
-            from src.dagster.utils.schemas import constructor_schema_contract as schema_contract
+            from src.dagster.utils.schemas import (
+                constructor_schema_contract as schema_contract,
+            )
             from src.dagster.utils.schemas import (
                 constructor_schema_contract_no_sprints as schema_contract_no_sprints,
             )

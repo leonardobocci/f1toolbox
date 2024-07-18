@@ -120,7 +120,9 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         df = df.with_columns(
             [
                 (pl.col("delta_speed") / 3.6).alias("delta_ms_speed"),
-                (pl.col("delta_time") / 1e9).alias("delta_s_time"), #convert from nanoseconds to seconds
+                (pl.col("delta_time").dt.total_nanoseconds() / 1e9).alias(
+                    "delta_s_time"
+                ),  # convert from nanoseconds to seconds
             ]
         )
         df = df.with_columns(
@@ -147,36 +149,38 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
-    '''
-    TODO: 
+    """
+    TODO:
     eliminate outliers (winsorize), apply filter to smooth data,
     calculate acceleration scores (per session, taking fastest lap only, and normalizing tyre difference, to eliminate changing conditions)
-    '''
+    """
+
     def handle_outliers(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        '''
+        """
         Lateral max G's: over 5 according to Merc: https://www.mercedesamgf1.com/news/g-force-and-formula-one-explained
         lateral and braking up to 6, accelerating up to 4: https://f1chronicle.com/f1-g-force-how-many-gs-can-a-f1-car-pull/#G-Force-During-Acceleration
-        '''
-        upper_bound_lateral = 58 #M/S^2, 6G's
-        upper_bound_braking = 58 #M/S^2, 6G's
-        upper_bound_acceleration = 39 #M/S^2, 4G's
+        """
+        upper_bound_lateral = 58  # M/S^2, 6G's
+        upper_bound_braking = 58  # M/S^2, 6G's
+        upper_bound_acceleration = 39  # M/S^2, 4G's
         pass
+
     def apply_digital_filter(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        '''Apply a savitzky golay filter to the lateral and longitudinal acceleration columns.
-        Use a window of 11 and a polynomial order of 5.'''
+        """Apply a savitzky golay filter to the lateral and longitudinal acceleration columns.
+        Use a window of 11 and a polynomial order of 5."""
         return df.with_columns(
             [
                 (
-                    pl.col('lateral_acceleration')
+                    pl.col("lateral_acceleration")
                     .map(lambda x: savgol_filter(x.to_numpy(), 11, 5))
                     .explode()
                 ),
                 (
-                    pl.col('longitudinal_acceleration')
+                    pl.col("longitudinal_acceleration")
                     .map(lambda x: savgol_filter(x.to_numpy(), 11, 5))
                     .explode()
                 ),
             ]
         )
-    
+
     pass
