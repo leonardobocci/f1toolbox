@@ -1,12 +1,12 @@
+import json
 import os
 
-import json
-
 import polars as pl
-from src.dagster.assets import constants
-from src.dagster.assets.constants import YEARS as years
 from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata
+
+from src.dagster.assets import constants
+from src.dagster.assets.constants import YEARS as years
 from src.dagster.utils.fantasy_results_parser import parse_results
 from src.dagster.utils.iomanager import polars_to_parquet
 

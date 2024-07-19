@@ -1,10 +1,11 @@
-from src.dagster.assets import constants
 from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata
+
+from src.dagster.assets import constants
 from src.dagster.utils.fastf1_parser import (
+    enrich_individual_telemetry_parquet_files,
     parse_json_signals,
     parse_parquet_signals,
-    enrich_fastf1_telemetry,
 )
 from src.dagster.utils.iomanager import polars_to_parquet
 
@@ -95,8 +96,10 @@ def bronze_fastf1_sessions(context):
 )
 def bronze_fastf1_telemetry(context):
     """Parse landing zone fastf1 telemetry details to parquet file"""
-    df = parse_parquet_signals(context, "telemetry")
-    df = enrich_fastf1_telemetry(context, df)
+    enrich_individual_telemetry_parquet_files(
+        context
+    )  # saves to a rich_telemetry directory
+    df = parse_parquet_signals(context, "rich_telemetry")
     polars_to_parquet(
         filedir=constants.BRONZE_FASTF1_PATH,
         filename="telemetry",

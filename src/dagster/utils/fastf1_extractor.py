@@ -3,6 +3,7 @@ from datetime import datetime
 import fastf1
 import flatdict
 import polars as pl
+
 from src.dagster.assets import constants
 from src.dagster.utils.iomanager import polars_to_parquet
 from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
@@ -195,14 +196,6 @@ def _extract_session_telemetry(
             telemetry = car_telemetry
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
-    telemetry = telemetry.with_columns(
-        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1"),
-        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2"),
-        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1"),
-        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2"),
-        pl.col("SessionTime").diff().alias("delta_time"),
-        pl.col("Speed").diff().alias("delta_speed"),
-    )
     polars_to_parquet(
         filedir=f"{constants.landing_FASTF1_PATH}/{year}/telemetry",
         filename=f"{session_id}",
