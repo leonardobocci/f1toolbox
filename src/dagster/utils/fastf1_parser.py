@@ -278,7 +278,6 @@ def enrich_individual_telemetry_parquet_files(context) -> None:
 def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
     """
     TODO:
-    eliminate outliers (winsorize), apply filter to smooth data,
     calculate acceleration scores (per session, taking fastest lap only, and normalizing tyre difference, to eliminate changing conditions)
     """
     pass
