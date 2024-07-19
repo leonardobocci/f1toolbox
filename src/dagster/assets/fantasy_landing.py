@@ -1,5 +1,6 @@
 import requests
 from dagster import MetadataValue, asset
+
 from src.dagster.partitions import fantasy_partitions
 from src.dagster.utils.iomanager import save_landing_fantasy_json as save_json
 

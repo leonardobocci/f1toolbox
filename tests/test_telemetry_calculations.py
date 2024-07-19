@@ -3,13 +3,15 @@ import sys  # this allows running with pytest command both from parent and curre
 sys.path.append("../")
 sys.path.append("./")
 
-from src.dagster.utils.fastf1_parser import enrich_fastf1_telemetry
-from unittest.mock import MagicMock
-import polars as pl
-from datetime import timedelta
 import datetime
-import zoneinfo
+from datetime import timedelta
+from unittest.mock import MagicMock
+
 import dateutil.parser
+import polars as pl
+import zoneinfo
+
+from src.dagster.utils.fastf1_parser import enrich_fastf1_telemetry
 
 context = MagicMock()
 

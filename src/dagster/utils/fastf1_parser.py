@@ -1,8 +1,14 @@
 import glob
+import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import numpy as np
 import polars as pl
-from scipy.signal import savgol_filter
+import scipy.signal as ss
+
+from src.dagster.assets import constants
+from src.dagster.utils import iomanager
 
 
 def parse_json_signals(context, signal_directory: str) -> pl.DataFrame:
@@ -14,6 +20,7 @@ def parse_json_signals(context, signal_directory: str) -> pl.DataFrame:
 
 
 def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
+    """Given an asset subdirectory, load all parquet files for all years and return a polars dataframe."""
     if signal_directory == "laps":
         df = pl.concat(
             [
@@ -26,6 +33,19 @@ def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
     else:
         df = pl.scan_parquet(f"data/landing/fastf1/*/{signal_directory}/*.parquet")
     return df
+
+
+def telemetry_coordinate_calculations(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    """Given a telemetry dataframe, calculate the previous two points, the time difference, and the speed difference."""
+    telemetry = df.with_columns(
+        pl.col("X").shift(1, fill_value=0).over("car_number").alias("x_prev_1"),
+        pl.col("X").shift(2, fill_value=0).over("car_number").alias("x_prev_2"),
+        pl.col("Y").shift(1, fill_value=0).over("car_number").alias("y_prev_1"),
+        pl.col("Y").shift(2, fill_value=0).over("car_number").alias("y_prev_2"),
+        pl.col("SessionTime").diff().alias("delta_time"),
+        pl.col("Speed").diff().alias("delta_speed"),
+    )
+    return telemetry
 
 
 def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
@@ -148,39 +168,117 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
     return results
 
 
+def apply_digital_filter(
+    context, df: pl.LazyFrame, filter_params: dict = {"window_len": 5, "polyorder": 3}
+) -> pl.LazyFrame:
+    """Apply a savitzky golay filter to the lateral and longitudinal acceleration columns.
+    Use a window of 11 and a polynomial order of 5."""
+    window_len = filter_params["window_len"]
+    polyorder = filter_params["polyorder"]
+    return df.with_columns(
+        longitudinal_acceleration=pl.Series(
+            ss.savgol_filter(
+                np.ravel(df.select("longitudinal_acceleration").collect().to_numpy()),
+                window_length=window_len,
+                polyorder=polyorder,
+            )
+        ),
+        lateral_acceleration=pl.Series(
+            ss.savgol_filter(
+                np.ravel(df.select("lateral_acceleration").collect().to_numpy()),
+                window_length=window_len,
+                polyorder=polyorder,
+            )
+        ),
+    )
+
+
+def handle_outliers(context, df: pl.LazyFrame, handling="drop") -> pl.LazyFrame:
+    """
+    Lateral max G's: over 5 according to Merc: https://www.mercedesamgf1.com/news/g-force-and-formula-one-explained
+    lateral and braking up to 6, accelerating up to 4: https://f1chronicle.com/f1-g-force-how-many-gs-can-a-f1-car-pull/#G-Force-During-Acceleration
+    """
+    lower_bound_lateral = 0
+    upper_bound_lateral = 58  # M/S^2, 6G's
+    lower_bound_braking = -58  # M/S^2, 6G's
+    upper_bound_acceleration = 39  # M/S^2, 4G's
+    if handling == "drop":
+        df = df.filter(
+            (pl.col("lateral_acceleration") > lower_bound_lateral)
+            & (pl.col("lateral_acceleration") < upper_bound_lateral)
+            & (pl.col("longitudinal_acceleration") > lower_bound_braking)
+            & (pl.col("longitudinal_acceleration") < upper_bound_acceleration)
+        )
+    elif handling == "winsorize":
+        df = df.with_columns(
+            pl.when(pl.col("lateral_acceleration") > upper_bound_lateral)
+            .then(upper_bound_lateral)
+            .otherwise(pl.col("lateral_acceleration"))
+            .alias("lateral_acceleration"),
+            pl.when(pl.col("longitudinal_acceleration") < lower_bound_braking)
+            .then(lower_bound_braking)
+            .otherwise(pl.col("longitudinal_acceleration"))
+            .alias("longitudinal_acceleration"),
+        )
+        df = df.with_columns(
+            pl.when(pl.col("longitudinal_acceleration") > upper_bound_acceleration)
+            .then(-upper_bound_acceleration)
+            .otherwise(pl.col("longitudinal_acceleration"))
+            .alias("longitudinal_acceleration"),
+            pl.when(pl.col("lateral_acceleration") < lower_bound_lateral)
+            .then(lower_bound_lateral)
+            .otherwise(pl.col("lateral_acceleration"))
+            .alias("lateral_acceleration"),
+        )
+    return df
+
+
+def enrich_individual_telemetry_parquet_files(context) -> None:
+    """For each small telemetry file, add accelerations and digital filters, running operations in parallel (because this is an IO bound operation). Write the dfs to a separate directory with parquet files."""
+
+    def extract_from_path(path, target="filenum"):
+        if target == "filenum":
+            match = re.search(r"telemetry/(\d+).parquet", path)
+        elif target == "year":
+            match = re.search(r"fastf1/(\d+)/telemetry", path)
+        return match.group(1)
+
+    def process_file(path):
+        file_number = extract_from_path(str(path), target="filenum")
+        year = extract_from_path(str(path), target="year")
+        df = pl.scan_parquet(path)
+        df = telemetry_coordinate_calculations(context, df)
+        df = enrich_fastf1_telemetry(context, df)
+        df = handle_outliers(context, df)
+        df = apply_digital_filter(context, df)
+        df = handle_outliers(
+            context, df, handling="winsorize"
+        )  # this is to handle any outliers that may have been introduced by the filter
+        iomanager.polars_to_parquet(
+            filedir=f"{constants.landing_FASTF1_PATH}/{year}/rich_telemetry",
+            filename=file_number,
+            data=df,
+            context=context,
+        )
+
+    paths_list = [
+        x for x in Path(constants.landing_FASTF1_PATH).rglob("*/telemetry/*.parquet")
+    ]
+
+    with ThreadPoolExecutor(
+        max_workers=2
+    ) as executor:  # TODO: SMART SETTING FOR MAX WORKERS
+        futures = [executor.submit(process_file, path) for path in paths_list]
+        for future in as_completed(futures):
+            future.result()  # Wait for each future to complete. Raise exceptions.
+
+    return None
+
+
 def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
     """
     TODO:
     eliminate outliers (winsorize), apply filter to smooth data,
     calculate acceleration scores (per session, taking fastest lap only, and normalizing tyre difference, to eliminate changing conditions)
     """
-
-    def handle_outliers(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        Lateral max G's: over 5 according to Merc: https://www.mercedesamgf1.com/news/g-force-and-formula-one-explained
-        lateral and braking up to 6, accelerating up to 4: https://f1chronicle.com/f1-g-force-how-many-gs-can-a-f1-car-pull/#G-Force-During-Acceleration
-        """
-        upper_bound_lateral = 58  # M/S^2, 6G's
-        upper_bound_braking = 58  # M/S^2, 6G's
-        upper_bound_acceleration = 39  # M/S^2, 4G's
-        pass
-
-    def apply_digital_filter(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        """Apply a savitzky golay filter to the lateral and longitudinal acceleration columns.
-        Use a window of 11 and a polynomial order of 5."""
-        return df.with_columns(
-            [
-                (
-                    pl.col("lateral_acceleration")
-                    .map(lambda x: savgol_filter(x.to_numpy(), 11, 5))
-                    .explode()
-                ),
-                (
-                    pl.col("longitudinal_acceleration")
-                    .map(lambda x: savgol_filter(x.to_numpy(), 11, 5))
-                    .explode()
-                ),
-            ]
-        )
-
     pass

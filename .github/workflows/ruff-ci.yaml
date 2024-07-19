@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: ruff-ci
     runs-on: ubuntu-latest
 
     permissions:

@@ -1,6 +1,7 @@
 import json
 
 import polars as pl
+
 from src.dagster.assets.constants import YEARS as years
 from src.dagster.utils.schemas import season_metadata
 
