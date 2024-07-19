@@ -1,4 +1,4 @@
-FROM python:3.10.12
+FROM python:3.13.0b2
 
 #https://github.com/orgs/python-poetry/discussions/1879
 ENV PYTHONUNBUFFERED=1 \
