@@ -279,5 +279,8 @@ def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
     """
     TODO:
     calculate acceleration scores (per session, taking fastest lap only, and normalizing tyre difference, to eliminate changing conditions)
+
+    quali: fastest lap only to get scores - ensure same tyre compound
+    race+sprint: all laps + normalize tyre compound based on degradation curve for tyre age and tyre compound mean difference.
     """
     pass
