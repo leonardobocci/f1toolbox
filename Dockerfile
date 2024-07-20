@@ -33,7 +33,7 @@ WORKDIR /app
 
 COPY poetry.lock pyproject.toml ./
 RUN curl -sSL https://install.python-poetry.org | python3 -
-RUN poetry install
+RUN poetry install --without dev
 
 COPY ./src app/src
 

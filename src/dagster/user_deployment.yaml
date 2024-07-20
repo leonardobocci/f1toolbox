@@ -8,5 +8,5 @@ dagster-user-deployments:
         pullPolicy: Always
       dagsterApiGrpcArgs:
         - "--python-file"
-        - "/app/__init__.py"
+        - "/app/src/dagster/__init__.py"
       port: 8081
