@@ -13,12 +13,16 @@ fantasy_drivers as (
 ),
 
 unioned as (
-    SELECT 'Constructor' as asset_type,
-        * from fantasy_constructors
-    UNION ALL
-    SELECT 'Driver' as asset_type,
-        * from fantasy_drivers
+    select
+        'Constructor' as asset_type,
+        *
+    from fantasy_constructors
+    union all
+    select
+        'Driver' as asset_type,
+        *
+    from fantasy_drivers
 )
 
-SELECT *
-FROM unioned
+select *
+from unioned

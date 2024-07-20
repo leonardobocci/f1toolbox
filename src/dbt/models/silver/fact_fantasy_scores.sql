@@ -2,33 +2,66 @@ with
 
 constructor_scores as (
 
-    select result_id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_constructor_attributes') }}
+    select
+        result_id,
+        season,
+        round_number,
+        price,
+        price_change,
+        points_scored
+    from {{ ref('fantasy_constructor_attributes') }}
 
 ),
 
 driver_scores as (
 
-    select result_id, season, round_number, price, price_change, points_scored from {{ ref('fantasy_driver_attributes') }}
+    select
+        result_id,
+        season,
+        round_number,
+        price,
+        price_change,
+        points_scored
+    from {{ ref('fantasy_driver_attributes') }}
 
 ),
 
 unioned as (
-    SELECT 'Constructor' as asset_type,
-        * from constructor_scores
-    UNION ALL
-    SELECT 'Driver' as asset_type,
-        * from driver_scores
+    select
+        'Constructor' as asset_type,
+        *
+    from constructor_scores
+    union all
+    select
+        'Driver' as asset_type,
+        *
+    from driver_scores
 ),
 
 calculated as (
-    SELECT *, points_scored/price as points_per_price FROM unioned WHERE points_scored IS NOT NULL
+    select
+        *,
+        points_scored / price as points_per_price
+    from unioned
+    where points_scored is not NULL
 ),
 
 ranked as (
-    SELECT *,
-        rank() over (partition by asset_type, season, round_number order by points_per_price desc) as rank_value,
-        rank() over (partition by asset_type, season, round_number order by points_scored desc) as rank_points
-    FROM calculated
+    select
+        *,
+        rank()
+            over (
+                partition by asset_type, season, round_number
+                order by points_per_price desc
+            )
+            as rank_value,
+        rank()
+            over (
+                partition by asset_type, season, round_number
+                order by points_scored desc
+            )
+            as rank_points
+    from calculated
 )
 
 select * from ranked

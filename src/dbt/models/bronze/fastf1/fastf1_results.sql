@@ -1,2 +1,24 @@
-SELECT CAST(session_id AS Nullable(Int64)) as session_id,CAST(event_id AS Nullable(Int64)) as event_id,DriverNumber as driver_number,Abbreviation as driver_code,BroadcastName as broadcast_name,DriverId as fastf1_driver_id, TeamName as constructor_name, TeamColor as constructor_color,TeamId as fastf1_constructor_id, FirstName as driver_first_name, LastName as driver_last_name, FullName as driver_full_name, HeadshotUrl as driver_photo_url, CountryCode as driver_country_code, Position as position, ClassifiedPosition as classified_position, GridPosition as grid_position, Q1 as q1_result, Q2 as q2_result, Q3 as q3_result, Status as fastf1_status, Points as championship_points
-FROM file('fastf1/results.parquet', 'Parquet')
+SELECT
+    drivernumber AS driver_number,
+    abbreviation AS driver_code,
+    broadcastname AS broadcast_name,
+    driverid AS fastf1_driver_id,
+    teamname AS constructor_name,
+    teamcolor AS constructor_color,
+    teamid AS fastf1_constructor_id,
+    firstname AS driver_first_name,
+    lastname AS driver_last_name,
+    fullname AS driver_full_name,
+    headshoturl AS driver_photo_url,
+    countrycode AS driver_country_code,
+    position,
+    classifiedposition AS classified_position,
+    gridposition AS grid_position,
+    q1 AS q1_result,
+    q2 AS q2_result,
+    q3 AS q3_result,
+    status AS fastf1_status,
+    points AS championship_points,
+    CAST(session_id AS Nullable(Int64)) AS session_id,
+    CAST(event_id AS Nullable(Int64)) AS event_id
+FROM FILE('fastf1/results.parquet', 'Parquet')
