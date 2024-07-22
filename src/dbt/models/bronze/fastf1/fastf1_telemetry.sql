@@ -1,18 +1,18 @@
 SELECT
     car_number,
-    date AS telemetry_datetime,
-    rpm,
-    speed,
-    ngear AS gear_number,
-    throttle AS throttle_percentage,
-    brake AS is_braking,
-    source AS telemetry_source,
-    time AS time_from_lap_start,
-    sessiontime AS time_from_session_start,
-    status AS on_track_status,
-    x AS x_coordinate,
-    y AS y_coordinate,
-    z AS z_coordinate,
+    Date AS telemetry_datetime,-- noqa: CP02
+    RPM AS rpm, -- noqa: CP02, AL09
+    Speed AS speed, -- noqa: CP02, AL09
+    nGear AS gear_number, -- noqa: CP02
+    Throttle AS throttle_percentage, -- noqa: CP02
+    Brake AS is_braking,-- noqa: CP02
+    Source AS telemetry_source,-- noqa: CP02
+    Time AS time_from_lap_start,-- noqa: CP02
+    SessionTime AS time_from_session_start, -- noqa: CP02
+    Status AS on_track_status, -- noqa: CP02
+    X AS x_coordinate, -- noqa: CP02
+    Y AS y_coordinate, -- noqa: CP02
+    Z AS z_coordinate, -- noqa: CP02
     CAST(session_id AS Nullable(Int64)) AS session_id,
-    CAST(drs AS Nullable(Bool)) AS is_drs_enabled
+    CAST(DRS AS Nullable(Bool)) AS is_drs_enabled -- noqa: CP02
 FROM FILE('fastf1/telemetry.parquet', 'Parquet')
