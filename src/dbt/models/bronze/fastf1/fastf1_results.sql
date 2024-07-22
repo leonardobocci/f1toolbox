@@ -1,2 +1,24 @@
-SELECT CAST(session_id AS Nullable(Int64)) as session_id,CAST(event_id AS Nullable(Int64)) as event_id,DriverNumber as driver_number,Abbreviation as driver_code,BroadcastName as broadcast_name,DriverId as fastf1_driver_id, TeamName as constructor_name, TeamColor as constructor_color,TeamId as fastf1_constructor_id, FirstName as driver_first_name, LastName as driver_last_name, FullName as driver_full_name, HeadshotUrl as driver_photo_url, CountryCode as driver_country_code, Position as position, ClassifiedPosition as classified_position, GridPosition as grid_position, Q1 as q1_result, Q2 as q2_result, Q3 as q3_result, Status as fastf1_status, Points as championship_points
-FROM file('fastf1/results.parquet', 'Parquet')
+SELECT
+    DriverNumber AS driver_number,-- noqa: CP02
+    Abbreviation AS driver_code,-- noqa: CP02
+    BroadcastName AS broadcast_name,-- noqa: CP02
+    DriverId AS fastf1_driver_id,-- noqa: CP02
+    TeamName AS constructor_name,-- noqa: CP02
+    TeamColor AS constructor_color, -- noqa: CP02
+    TeamId AS fastf1_constructor_id, -- noqa: CP02
+    FirstName AS driver_first_name,-- noqa: CP02
+    LastName AS driver_last_name, -- noqa: CP02
+    FullName AS driver_full_name, -- noqa: CP02
+    HeadshotUrl AS driver_photo_url, -- noqa: CP02
+    CountryCode AS driver_country_code, -- noqa: CP02
+    Position AS current_position, -- noqa: CP02
+    ClassifiedPosition AS classified_position,-- noqa: CP02
+    GridPosition AS grid_position, -- noqa: CP02
+    Q1 AS q1_result,-- noqa: CP02
+    Q2 AS q2_result,-- noqa: CP02
+    Q3 AS q3_result,-- noqa: CP02
+    Status AS fastf1_status, -- noqa: CP02
+    Points AS championship_points, -- noqa: CP02
+    CAST(session_id AS Nullable(Int64)) AS session_id,-- noqa: CP02
+    CAST(event_id AS Nullable(Int64)) AS event_id-- noqa: CP02
+FROM FILE('fastf1/results.parquet', 'Parquet')

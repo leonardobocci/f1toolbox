@@ -1,2 +1,12 @@
-SELECT CAST(session_id AS Nullable(Int64)) as session_id, CAST(event_id AS Nullable(Int64)) as event_id, Time as session_timestamp, AirTemp as air_temperature, Humidity as humidity, Pressure as pressure, Rainfall as is_raining, TrackTemp as track_temperature, WindDirection as wind_direction_degrees, WindSpeed as wind_speed
-FROM file('fastf1/weathers.parquet', 'Parquet')
+SELECT
+    Time AS session_timestamp, -- noqa: CP02
+    AirTemp AS air_temperature, -- noqa: CP02
+    Humidity AS humidity, -- noqa: CP02, AL09
+    Pressure AS pressure, -- noqa: CP02, AL09
+    Rainfall AS is_raining, -- noqa: CP02
+    TrackTemp AS track_temperature, -- noqa: CP02
+    WindDirection AS wind_direction_degrees, -- noqa: CP02
+    WindSpeed AS wind_speed, -- noqa: CP02
+    CAST(session_id AS Nullable(Int64)) AS session_id,-- noqa: CP02
+    CAST(event_id AS Nullable(Int64)) AS event_id-- noqa: CP02
+FROM FILE('fastf1/weathers.parquet', 'Parquet')

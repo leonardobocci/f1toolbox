@@ -15,10 +15,16 @@ fastf1_sessions as (
 fastf1_events_sessions as (
 
     select
-        fastf1_events.*,
-        session_id, session_type, start_date, end_date, local_timezone_utc_offset
-    from fastf1_events
-    join fastf1_sessions on fastf1_events.event_id = fastf1_sessions.event_id
+        a.*,
+        b.session_id,
+        b.session_type,
+        b.start_date,
+        b.end_date,
+        b.local_timezone_utc_offset
+    from fastf1_events as a
+    inner join
+        fastf1_sessions as b
+        on a.event_id = b.event_id
 ),
 
 fastf1_weathers as (
@@ -29,17 +35,18 @@ fastf1_weathers as (
 
 session_weathers as (
 
-    SELECT
+    select
         session_id,
         event_id,
-        avg(air_temperature) AS avg_air_temperature,
-        avg(track_temperature) AS avg_track_temperature,
-        avg(humidity) AS avg_humidity,
-        avg(wind_speed) AS avg_wind_speed,
-        SUM(is_raining) / COUNT(is_raining) AS raining_percentage_of_session_time
-    FROM
+        avg(air_temperature) as avg_air_temperature,
+        avg(track_temperature) as avg_track_temperature,
+        avg(humidity) as avg_humidity,
+        avg(wind_speed) as avg_wind_speed,
+        sum(is_raining)
+        / count(is_raining) as raining_percentage_of_session_time
+    from
         fastf1_weathers
-    GROUP BY
+    group by
         session_id,
         event_id
 ),
@@ -47,10 +54,18 @@ session_weathers as (
 fastf1_events_sessions_weathers as (
 
     select
-        fastf1_events_sessions.*,
-        avg_air_temperature, avg_track_temperature, avg_humidity, avg_wind_speed, raining_percentage_of_session_time
-    from fastf1_events_sessions
-    join session_weathers on fastf1_events_sessions.session_id = session_weathers.session_id and fastf1_events_sessions.event_id = session_weathers.event_id
+        a.*,
+        b.avg_air_temperature,
+        b.avg_track_temperature,
+        b.avg_humidity,
+        b.avg_wind_speed,
+        b.raining_percentage_of_session_time
+    from fastf1_events_sessions as a
+    inner join
+        session_weathers as b
+        on
+            a.session_id = b.session_id
+            and a.event_id = b.event_id
 
 ),
 
@@ -63,9 +78,12 @@ fantasy_races as (
 fastf1_joined_fantasy as (
     select
         a.*,
-        event_format, has_fantasy_results
-    from fastf1_events_sessions_weathers a
-    left join fantasy_races b on a.round_number = b.round_number and a.season = b.season
+        b.event_format,
+        b.has_fantasy_results
+    from fastf1_events_sessions_weathers as a
+    left join
+        fantasy_races as b
+        on a.round_number = b.round_number and a.season = b.season
 ),
 
 dim_circuits as (
@@ -78,9 +96,17 @@ dim_track_sessions as (
 
     select
         a.*,
-        count_slow_corners, count_medium_corners, count_fast_corners, straight_length, count_short_accelerations, count_medium_accelerations, count_long_accelerations
-    from fastf1_joined_fantasy a
-    join dim_circuits b on a.circuit_key = b.circuit_key and a.season = b.season
+        b.count_slow_corners,
+        b.count_medium_corners,
+        b.count_fast_corners,
+        b.straight_length,
+        b.count_short_accelerations,
+        b.count_medium_accelerations,
+        b.count_long_accelerations
+    from fastf1_joined_fantasy as a
+    inner join
+        dim_circuits as b
+        on a.circuit_key = b.circuit_key and a.season = b.season
 
 )
 
