@@ -64,3 +64,8 @@ def polars_to_parquet(
     else:
         raise NotImplementedError("Data type not supported")
     return
+
+
+def parquet_to_polars(filedir: str, context) -> pl.LazyFrame:
+    """Read a parquet file to polars frame"""
+    return pl.scan_parquet(filedir)

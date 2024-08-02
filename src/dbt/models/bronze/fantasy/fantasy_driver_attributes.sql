@@ -24,4 +24,4 @@ SELECT
     NULL AS race_pit_stop_points,
     race_dotd_points AS race_driver_of_day_points,
     CAST(season AS Nullable(Int64)) AS season
-FROM FILE('fantasy/driver_fantasy_attributes.parquet', 'Parquet')
+FROM file('fantasy/driver_fantasy_attributes.parquet', 'Parquet')-- noqa: CP03

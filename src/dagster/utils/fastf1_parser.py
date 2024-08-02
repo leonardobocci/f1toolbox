@@ -35,6 +35,102 @@ def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
     return df
 
 
+def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    df = df.with_columns(
+        local_start_datetime=pl.col("start_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
+        local_end_datetime=pl.col("end_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
+    ).select(pl.exclude("start_date", "end_date"))
+    df = df.with_columns(
+        local_timezone_utc_offset=pl.col("local_timezone_utc_offset").str.split(",")
+    )
+    df = df.with_columns(
+        pl.when(
+            pl.col("local_timezone_utc_offset").list.len() == 2
+        ).then(  # there are both day and hour offsets
+            pl.col("local_timezone_utc_offset").list.first().alias("day_offset"),
+        ),
+        pl.when(pl.col("local_timezone_utc_offset").list.len() == 2)
+        .then(
+            pl.col("local_timezone_utc_offset").list.last(),
+        )
+        .otherwise(
+            pl.when(
+                pl.col("local_timezone_utc_offset").list.len() == 1
+            ).then(  # there is only an hour offset
+                pl.col("local_timezone_utc_offset").list.first(),
+            ),
+        )
+        .alias("hour_offset"),
+    ).select(pl.exclude("local_timezone_utc_offset"))
+    df = df.with_columns(
+        [
+            pl.col("day_offset").str.split(" ").list.first() + "d",
+            pl.col("hour_offset")
+            .str.to_time()
+            .cast(pl.Duration)
+            .dt.total_seconds()
+            .cast(pl.String)
+            + "s",
+        ]
+    )  # prepare for offset by string processing function
+    for mycol in ["local_start_datetime", "local_end_datetime"]:
+        df = df.with_columns(
+            pl.when(pl.col("day_offset").is_not_null())
+            .then(pl.col(mycol).dt.offset_by(pl.col("day_offset")))
+            .otherwise(pl.col(mycol))
+        )
+        df = df.with_columns(
+            pl.when(pl.col("hour_offset").is_not_null())
+            .then(pl.col(mycol).dt.offset_by(pl.col("hour_offset")))
+            .otherwise(pl.col(mycol))
+            .alias(f'utc_{mycol.removeprefix("local_")}')
+        )
+    df = df.select(
+        pl.exclude(
+            "hour_offset", "day_offset", "local_start_datetime", "local_end_datetime"
+        )
+    )
+    return df
+
+
+def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    df = df.with_columns(
+        lap_time_seconds=pl.col("Time") / 1e9,  # from nanoseconds to seconds
+        q1_lap_time_seconds=pl.col("Q1") / 1e9,  # from nanoseconds to seconds
+        q2_lap_time_seconds=pl.col("Q2") / 1e9,  # from nanoseconds to seconds
+        q3_lap_time_seconds=pl.col("Q3") / 1e9,  # from nanoseconds to seconds
+    )
+    return df.select(pl.exclude("Time", "Q1", "Q2", "Q3"))
+
+
+def parse_lap_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    return df.with_columns(
+        end_time=pl.col("Time").shift(-1, fill_value=df.select(pl.last("Time")))
+    )  # last value would be null otherwise
+
+
+def parse_weather_timestamps(
+    context, df: pl.LazyFrame, sessions_df: pl.LazyFrame
+) -> pl.LazyFrame:
+    """Given a weather dataframe, parse the timestamp and return a new column with the time in seconds from the start of the session."""
+    selection = df.columns
+    df = df.join(sessions_df, left_on="session_id", right_on="id")
+    df = df.with_columns(
+        seconds_from_session_start=pl.col("Time") / 1e9  # from nanoseconds to seconds
+    )
+    df = df.with_columns(
+        timestamp=pl.col("seconds_from_session_start") + pl.col("local_start_datetime"),
+    )
+    df = df.with_columns(
+        end_timestamp=pl.col("seconds_from_session_start").shift(
+            -1, fill_value=pl.col("seconds_from_session_start").last()
+        )
+    )
+    df = df.select(*selection, "timestamp", "end_timestamp")
+    df = df.select(pl.exclude("Time"))
+    return df
+
+
 def telemetry_coordinate_calculations(context, df: pl.LazyFrame) -> pl.LazyFrame:
     """Given a telemetry dataframe, calculate the previous two points, the time difference, and the speed difference."""
     telemetry = df.with_columns(

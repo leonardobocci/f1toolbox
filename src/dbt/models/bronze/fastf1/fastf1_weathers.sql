@@ -1,5 +1,6 @@
 SELECT
-    Time AS session_timestamp, -- noqa: CP02
+    timestamp AS session_timestamp, -- noqa: CP02
+    end_timestamp AS valid_to,-- noqa: CP02
     AirTemp AS air_temperature, -- noqa: CP02
     Humidity AS humidity, -- noqa: CP02, AL09
     Pressure AS pressure, -- noqa: CP02, AL09
@@ -9,4 +10,4 @@ SELECT
     WindSpeed AS wind_speed, -- noqa: CP02
     CAST(session_id AS Nullable(Int64)) AS session_id,-- noqa: CP02
     CAST(event_id AS Nullable(Int64)) AS event_id-- noqa: CP02
-FROM FILE('fastf1/weathers.parquet', 'Parquet')
+FROM file('fastf1/weathers.parquet', 'Parquet')-- noqa: CP01,CP03
