@@ -15,4 +15,4 @@ SELECT
     Z AS z_coordinate, -- noqa: CP02
     CAST(session_id AS Nullable(Int64)) AS session_id,
     CAST(DRS AS Nullable(Bool)) AS is_drs_enabled -- noqa: CP02
-FROM FILE('fastf1/telemetry.parquet', 'Parquet')
+FROM file('fastf1/telemetry.parquet', 'Parquet')-- noqa: CP03

@@ -5,9 +5,13 @@ from src.dagster.assets import constants
 from src.dagster.utils.fastf1_parser import (
     enrich_individual_telemetry_parquet_files,
     parse_json_signals,
+    parse_lap_timestamps,
     parse_parquet_signals,
+    parse_results_lap_times,
+    parse_session_timestamps,
+    parse_weather_timestamps,
 )
-from src.dagster.utils.iomanager import polars_to_parquet
+from src.dagster.utils.iomanager import parquet_to_polars, polars_to_parquet
 
 
 @asset(
@@ -38,6 +42,7 @@ def bronze_fastf1_events(context):
 def bronze_fastf1_laps(context):
     """Parse landing zone fastf1 lap details to parquet file"""
     df = parse_parquet_signals(context, "laps")
+    df = parse_lap_timestamps(context, df)
     polars_to_parquet(
         filedir=constants.BRONZE_FASTF1_PATH, filename="laps", data=df, context=context
     )
@@ -55,6 +60,7 @@ def bronze_fastf1_laps(context):
 def bronze_fastf1_results(context):
     """Parse landing zone fastf1 results details to parquet file"""
     df = parse_parquet_signals(context, "results")
+    df = parse_results_lap_times(context, df)
     polars_to_parquet(
         filedir=constants.BRONZE_FASTF1_PATH,
         filename="results",
@@ -75,6 +81,7 @@ def bronze_fastf1_results(context):
 def bronze_fastf1_sessions(context):
     """Parse landing zone fastf1 sessions details to parquet file"""
     df = parse_json_signals(context, "sessions")
+    df = parse_session_timestamps(context, df)
     polars_to_parquet(
         filedir=constants.BRONZE_FASTF1_PATH,
         filename="sessions",
@@ -119,28 +126,6 @@ def bronze_fastf1_telemetry(context):
     deps=["landing_fastf1_assets"],
     compute_kind="polars",
 )
-def bronze_fastf1_weathers(context):
-    """Parse landing zone fastf1 weathers details to parquet file"""
-    df = parse_parquet_signals(context, "weathers")
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="weathers",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/weathers.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
-
-
-@asset(
-    group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
-    compute_kind="polars",
-)
 def bronze_fastf1_circuit_corners(context):
     """Parse landing zone fastf1 weathers details to parquet file"""
     df = parse_parquet_signals(context, "circuit_corners")
@@ -152,6 +137,32 @@ def bronze_fastf1_circuit_corners(context):
     )
     meta = parquet_metadata(
         f"{constants.BRONZE_FASTF1_PATH}/circuit_corners.parquet"
+    ).to_dict()
+    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
+    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
+    return
+
+
+@asset(
+    group_name="bronze_fastf1_files",
+    deps=["landing_fastf1_assets", "bronze_fastf1_sessions"],
+    compute_kind="polars",
+)
+def bronze_fastf1_weathers(context):
+    """Parse landing zone fastf1 weathers details to parquet file"""
+    sessions = parquet_to_polars(
+        f"{constants.BRONZE_FASTF1_PATH}/sessions.parquet", context
+    )
+    df = parse_parquet_signals(context, "weathers")
+    df = parse_weather_timestamps(context, df, sessions)
+    polars_to_parquet(
+        filedir=constants.BRONZE_FASTF1_PATH,
+        filename="weathers",
+        data=df,
+        context=context,
+    )
+    meta = parquet_metadata(
+        f"{constants.BRONZE_FASTF1_PATH}/weathers.parquet"
     ).to_dict()
     context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
     context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})

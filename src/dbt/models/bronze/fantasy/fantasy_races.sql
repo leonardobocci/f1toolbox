@@ -4,4 +4,4 @@ SELECT
     event_format,
     has_any_results AS has_fantasy_results,
     CAST(season AS Nullable(Int64)) AS season
-FROM FILE('fantasy/races.parquet', 'Parquet')
+FROM file('fantasy/races.parquet', 'Parquet')-- noqa: CP03

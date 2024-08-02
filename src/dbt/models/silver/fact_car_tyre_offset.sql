@@ -50,7 +50,11 @@ wet_tyre_stints as (
 
 dry_stints as (
 
-    select a.*
+    select
+        a.*,
+        b.session_timestamp,
+        b.valid_to,
+        b.is_raining
     from
         dry_tyre_stints as a
     left join
@@ -58,20 +62,24 @@ dry_stints as (
         on
             a.session_id = b.session_id
             and a.session_time_lap_end >= b.session_timestamp
-            and a.session_time_lap_end < b.end_time
+            and a.session_time_lap_end < b.valid_to
             and b.is_raining = 0
 ),
 
 wet_stints as (
 
-    select a.*
+    select
+        a.*,
+        b.session_timestamp,
+        b.valid_to,
+        b.is_raining
     from wet_tyre_stints as a
     left join
         weathers as b
         on
             a.session_id = b.session_id
             and a.session_time_lap_end >= b.session_timestamp
-            and a.session_time_lap_end < b.end_time
+            and a.session_time_lap_end < b.valid_to
             and b.is_raining = 1
 ),
 

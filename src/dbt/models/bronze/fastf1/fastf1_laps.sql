@@ -1,6 +1,7 @@
 SELECT
     Driver AS driver_code,-- noqa: CP02
     Time AS session_time_lap_end,-- noqa: CP02
+    end_time,-- noqa: CP02
     DriverNumber AS driver_number,-- noqa: CP02
     LapTime AS lap_time,-- noqa: CP02
     LapNumber AS lap_number,-- noqa: CP02
@@ -33,4 +34,4 @@ SELECT
     CAST(session_id AS Nullable(Int64)) AS session_id,-- noqa: CP02
     CAST(event_id AS Nullable(Int64)) AS event_id-- noqa: CP02
 FROM
-    FILE('fastf1/laps.parquet', 'Parquet')
+    file('fastf1/laps.parquet', 'Parquet')-- noqa: CP03

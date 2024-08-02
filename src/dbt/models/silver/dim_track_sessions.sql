@@ -17,10 +17,10 @@ fastf1_events_sessions as (
     select
         a.*,
         b.session_id,
+        b.session_name,
         b.session_type,
-        b.start_date,
-        b.end_date,
-        b.local_timezone_utc_offset
+        b.utc_start_datetime,
+        b.utc_end_datetime
     from fastf1_events as a
     inner join
         fastf1_sessions as b
