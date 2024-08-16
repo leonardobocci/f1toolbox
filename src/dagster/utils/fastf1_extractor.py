@@ -116,7 +116,6 @@ def _extract_session_weather(
     try:
         weather = pl.LazyFrame(session.weather_data)
     except fastf1.core.DataNotLoadedError:
-        context.log.error(f"Weather data not available for session {session_id}") 
         return None
     weather = weather.with_columns(pl.lit(session_id).alias("session_id"))
     weather = weather.with_columns(
@@ -257,8 +256,13 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
             saved_weather_session = _extract_session_weather(
                 context, session, event_info, year
             )
-            extraction_metadata["saved_weathers"].append(saved_weather_session)
-            context.log.info(f"{year}_{event_num}_{session_num} weather saved")
+            if not saved_weather_session:
+                context.log.error(
+                    f"{year}_{event_num}_{session_num} weather not available"
+                )
+            else:
+                extraction_metadata["saved_weathers"].append(saved_weather_session)
+                context.log.info(f"{year}_{event_num}_{session_num} weather saved")
             # Collect lap data
             saved_lap_session = _extract_session_laps(
                 context, session, event_info, year
@@ -270,7 +274,7 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
                 context, session, event_info, year
             )
             if not saved_telemetry_session:
-                context.log.warning(
+                context.log.error(
                     f"{year}_{event_num}_{session_num} telemetry not available"
                 )
             else:
