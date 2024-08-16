@@ -112,8 +112,12 @@ def _extract_session_weather(
     """Extract weather data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
-    weather = pl.LazyFrame(session.weather_data)
     session_id = session.session_info["Key"]
+    try:
+        weather = pl.LazyFrame(session.weather_data)
+    except fastf1.core.DataNotLoadedError:
+        context.log.error(f"Weather data not available for session {session_id}") 
+        return None
     weather = weather.with_columns(pl.lit(session_id).alias("session_id"))
     weather = weather.with_columns(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
