@@ -1,5 +1,10 @@
+/*TODO:
+Due to clickhouse issue with join operator different than =
+its not possible to align time frequency of weather data with lap data
+*/
 with
 
+/*
 weathers as (select * from {{ ref('fastf1_weathers') }}),
 
 dry_tyre_stints as (
@@ -21,7 +26,7 @@ dry_tyre_stints as (
         pit_out_time is null
         and pit_in_time is null
         and track_status = '1'
-        and tyre_compound in ('SOFT', 'MEDIUM', 'HARD')
+        and tyre_compound in (tuple('SOFT', 'MEDIUM', 'HARD'))
 
 ),
 
@@ -44,7 +49,7 @@ wet_tyre_stints as (
         pit_out_time is null
         and pit_in_time is null
         and track_status = '1'
-        and tyre_compound in ('INTERMEDIATE', 'WET')
+        and tyre_compound in (tuple('INTERMEDIATE', 'WET'))
 
 ),
 
@@ -85,9 +90,59 @@ wet_stints as (
 
 all_weather_stints as (
 
-    select * from dry_stints
+    select
+        session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        driver_number,
+        stint_number,
+        session_time_lap_end,
+        end_time,
+        lap_time,
+        tyre_compound,
+        tyre_age_laps,
+        is_raining
+    from dry_stints
     union all
-    select * from wet_stints
+    select
+    session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        driver_number,
+        stint_number,
+        session_time_lap_end,
+        end_time,
+        lap_time,
+        tyre_compound,
+        tyre_age_laps,
+        is_raining
+    from wet_stints
+),
+
+*/
+
+all_weather_stints as (
+    select
+        session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        driver_number,
+        stint_number,
+        session_time_lap_end,
+        end_time,
+        lap_time,
+        tyre_compound,
+        tyre_age_laps,
+        0 as is_raining
+    from {{ ref('fastf1_laps') }}
+    where
+        pit_out_time is null
+        and pit_in_time is null
+        and track_status = '1'
+        and tyre_compound in (tuple('SOFT', 'MEDIUM', 'HARD'))
 ),
 
 car_tyre_offset as (
@@ -100,7 +155,8 @@ car_tyre_offset as (
         driver_number,
         stint_number,
         tyre_compound,
-        sum(lap_time) as total_stint_time
+        sum(lap_time) as total_stint_time,
+        count(tyre_age_laps) as stint_length
     from all_weather_stints
     group by
         session_id,

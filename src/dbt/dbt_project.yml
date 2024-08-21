@@ -35,4 +35,4 @@ models:
       +group: silver_tables
     gold:
       +materialized: incremental
-      +group: gold_denormalized_incremental_views
+      +group: gold_incremental_views
