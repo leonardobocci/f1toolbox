@@ -1,8 +1,7 @@
 import os
 
 from dagster import (
-    AutoMaterializePolicy,
-    AutoMaterializeRule,
+    AutomationCondition,
     Definitions,
     load_assets_from_modules,
 )
@@ -18,24 +17,19 @@ from src.dagster.assets import (
 from src.dagster.assets.constants import dbt_project_dir
 from src.dagster.jobs import landing_fantasy_full_job, landing_fastf1_full_job
 
-# Downstream layers are auto materialized whenever the upstream layer is materialized
-materialization_policy = AutoMaterializePolicy.eager().with_rules(
-    AutoMaterializeRule.skip_on_not_all_parents_updated(
-        require_update_for_all_parent_partitions=True
-    )  # wait for all parents
-)
+materialization_condition = AutomationCondition.eager()  # TODO: figure out how to add all parent partition materialized requirement to prevent trigger on eahc partition load.
 
 landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
-    [fantasy_bronze], auto_materialize_policy=materialization_policy
+    [fantasy_bronze], automation_condition=materialization_condition
 )
 silver_fantasy_assets = load_assets_from_modules(
-    [fantasy_silver], auto_materialize_policy=materialization_policy
+    [fantasy_silver], automation_condition=materialization_condition
 )
 
 landing_fastf1_assets = load_assets_from_modules([fastf1_landing])
 bronze_fastf1_assets = load_assets_from_modules(
-    [fastf1_bronze], auto_materialize_policy=materialization_policy
+    [fastf1_bronze], automation_condition=materialization_condition
 )
 
 all_jobs = [landing_fastf1_full_job, landing_fantasy_full_job]

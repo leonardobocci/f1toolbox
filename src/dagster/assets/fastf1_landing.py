@@ -1,4 +1,4 @@
-from dagster import MetadataValue, RetryPolicy, asset
+from dagster import MetadataValue, asset
 
 from src.dagster.partitions import fast_f1_season_partitions
 from src.dagster.utils.fastf1_extractor import extract_fastf1
@@ -8,7 +8,6 @@ from src.dagster.utils.fastf1_extractor import extract_fastf1
     group_name="landing_fastf1_files",
     partitions_def=fast_f1_season_partitions,
     compute_kind="python",
-    retry_policy=RetryPolicy(max_retries=1, delay=5),
 )
 def landing_fastf1_assets(context):
     """Extract all data streams from fasft1 and save to landing zone."""

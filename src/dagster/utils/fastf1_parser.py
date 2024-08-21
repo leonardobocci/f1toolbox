@@ -119,7 +119,7 @@ def parse_weather_timestamps(
         seconds_from_session_start=pl.col("Time") / 1e9  # from nanoseconds to seconds
     )
     df = df.with_columns(
-        timestamp=pl.col("seconds_from_session_start") + pl.col("local_start_datetime"),
+        timestamp=pl.col("seconds_from_session_start") + pl.col("utc_start_datetime"),
     )
     df = df.with_columns(
         end_timestamp=pl.col("seconds_from_session_start").shift(
