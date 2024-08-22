@@ -9,23 +9,23 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.10.12,<3.13"
 dagster = ">=1.7.10, <1.9"
-dagster-webserver = ">=1.7.10"
-dagster-dbt = ">=0.23.10"
+dagster-webserver = ">=1.7.10" #pinned by dagster dependencies
+dagster-dbt = ">=0.23.10" #pinned by dagster dependencies
 polars = {extras = ["numpy"], version = ">=1.0.0, <2"}
-flatdict = "4.0.1"
+flatdict = "4.0.1" #small package, don't want to be affected by versioning
 pyarrow = ">=16.1.0, <17"
-fastf1 = "^3.3.9" #only latest ver is supported
+fastf1 = ">=3.3.9" #only latest ver is supported
 dbt-core = ">=1.8.3, <2"
 dbt-clickhouse = ">=1.8.0, <2"
-scipy = "^1.14.0"
+scipy = ">=1.14.0, <2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-ipykernel = "^6.29.5"
+pytest = ">=8.2.2, <9"
+ipykernel = ">=6.29.5, <7"
 ruff = ">=0.5.2, <1"
-pre-commit = "^3.7.1"
-hvplot = "^0.10.0"
-sqlfluff = "^3.1.0"
+pre-commit = ">=3.7.1, <4"
+hvplot = ">=0.10.0, <1"
+sqlfluff = ">=3.1.0, <4"
 
 [build-system]
 requires = ["poetry-core>=1.8.3"]
