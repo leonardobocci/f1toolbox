@@ -8,9 +8,9 @@ from dagster import (
 from dagster_dbt import DbtCliResource
 
 from src.dagster.assets import (
+    dbt_assets,
     fantasy_bronze,
     fantasy_landing,
-    fantasy_silver,
     fastf1_bronze,
     fastf1_landing,
 )
@@ -23,8 +23,8 @@ landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
     [fantasy_bronze], automation_condition=materialization_condition
 )
-silver_fantasy_assets = load_assets_from_modules(
-    [fantasy_silver], automation_condition=materialization_condition
+dagster_dbt_assets = load_assets_from_modules(
+    [dbt_assets], automation_condition=materialization_condition
 )
 
 landing_fastf1_assets = load_assets_from_modules([fastf1_landing])
@@ -40,7 +40,7 @@ defs = Definitions(
         *bronze_fantasy_assets,
         *landing_fastf1_assets,
         *bronze_fastf1_assets,
-        *silver_fantasy_assets,
+        *dagster_dbt_assets,
     ],
     jobs=all_jobs,
     resources={
