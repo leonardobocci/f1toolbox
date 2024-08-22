@@ -1,5 +1,4 @@
 from dagster import MultiPartitionsDefinition, StaticPartitionsDefinition
-
 from src.dagster.assets.constants import EVENTS, SEASONS, YEARS  # , SESSIONS
 
 fantasy_partitions = StaticPartitionsDefinition([*YEARS])
