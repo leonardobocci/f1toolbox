@@ -1,12 +1,12 @@
 import os
 
+from dagster_dbt import DbtCliResource
+
 from dagster import (
     AutomationCondition,
     Definitions,
     load_assets_from_modules,
 )
-from dagster_dbt import DbtCliResource
-
 from src.dagster.assets import (
     dbt_assets,
     fantasy_bronze,

@@ -1,6 +1,6 @@
-from dagster import MetadataValue, asset
 from pyarrow.parquet import read_metadata as parquet_metadata
 
+from dagster import MetadataValue, asset
 from src.dagster.assets import constants
 from src.dagster.utils.fastf1_parser import (
     enrich_individual_telemetry_parquet_files,
