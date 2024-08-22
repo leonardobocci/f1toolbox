@@ -1,5 +1,4 @@
 from dagster import AssetSelection, define_asset_job
-
 from src.dagster.partitions import fantasy_partitions, fast_f1_season_partitions
 
 landing_fantasy_assets = AssetSelection.groups("landing_fantasy_files")
