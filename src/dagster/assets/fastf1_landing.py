@@ -1,4 +1,5 @@
 from dagster import MetadataValue, asset
+
 from src.dagster.partitions import fast_f1_season_partitions
 from src.dagster.utils.fastf1_extractor import extract_fastf1
 
