@@ -23,6 +23,6 @@ SELECT
     race_pos_points,
     race_pit_stop_points,
     NULL AS race_driver_of_day_points,
-    CAST(season AS Nullable(Int64)) AS season
+    CAST(season AS Nullable (Int64)) AS season
 FROM
     file('fantasy/constructor_fantasy_attributes.parquet', 'Parquet')-- noqa: CP03, LT05

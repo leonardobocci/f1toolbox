@@ -31,7 +31,7 @@ SELECT
     DeletedReason AS deleted_reason,-- noqa: CP02
     FastF1Generated AS is_fastf1_generated,-- noqa: CP02
     IsAccurate AS is_accurate,-- noqa: CP02
-    CAST(session_id AS Nullable(Int64)) AS session_id,-- noqa: CP02
-    CAST(event_id AS Nullable(Int64)) AS event_id-- noqa: CP02
+    CAST(session_id AS Nullable (Int64)) AS session_id,-- noqa: CP02
+    CAST(event_id AS Nullable (Int64)) AS event_id-- noqa: CP02
 FROM
     file('fastf1/laps.parquet', 'Parquet')-- noqa: CP03
