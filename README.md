@@ -16,6 +16,10 @@ poetry config virtualenvs.in-project true
 poetry shell (to activate venv)
 poetry install
 
+Pre-commit:
+pre-commit install (for first time installation)
+pre-commit autoupdate (to bump linters)
+
 Dagster (env vars):
 DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
 DAGSTER_HOME="/home/leo/f1/src/dagster/localhome"
