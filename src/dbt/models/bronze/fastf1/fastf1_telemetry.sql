@@ -13,6 +13,8 @@ SELECT
     X AS x_coordinate, -- noqa: CP02
     Y AS y_coordinate, -- noqa: CP02
     Z AS z_coordinate, -- noqa: CP02
+    lateral_acceleration,
+    longitudinal_acceleration,
     CAST(session_id AS Nullable (Int64)) AS session_id,
     CAST(DRS AS Nullable (Bool)) AS is_drs_enabled -- noqa: CP02
 FROM file('fastf1/telemetry.parquet', 'Parquet')-- noqa: CP03

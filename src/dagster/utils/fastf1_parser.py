@@ -29,7 +29,7 @@ def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
                     f"{signal_directory}/*.parquet"
                 )
             ]
-        ).collect(streaming=True)
+        )
     else:
         df = pl.scan_parquet(f"data/landing/fastf1/*/{signal_directory}/*.parquet")
     return df
@@ -105,7 +105,9 @@ def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 def parse_lap_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
     return df.with_columns(
-        end_time=pl.col("Time").shift(-1, fill_value=df.select(pl.last("Time")))
+        end_time=pl.col("Time").shift(
+            -1, fill_value=df.select(pl.last("Time")).collect()
+        )
     )  # last value would be null otherwise
 
 
@@ -274,14 +276,20 @@ def apply_digital_filter(
     return df.with_columns(
         longitudinal_acceleration=pl.Series(
             ss.savgol_filter(
-                np.ravel(df.select("longitudinal_acceleration").collect().to_numpy()),
+                np.ravel(
+                    df.select("longitudinal_acceleration")
+                    .collect(streaming=True)
+                    .to_numpy()
+                ),
                 window_length=window_len,
                 polyorder=polyorder,
             )
         ),
         lateral_acceleration=pl.Series(
             ss.savgol_filter(
-                np.ravel(df.select("lateral_acceleration").collect().to_numpy()),
+                np.ravel(
+                    df.select("lateral_acceleration").collect(streaming=True).to_numpy()
+                ),
                 window_length=window_len,
                 polyorder=polyorder,
             )

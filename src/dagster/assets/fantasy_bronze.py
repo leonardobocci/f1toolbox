@@ -45,6 +45,7 @@ def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     # this collect should not be required,
     # but without it there is a weird columnnotfound: abbreviation
     # note this occurs also if calling collect(streaming=True)
+    # TODO: open an issue in polars github. Last tested on polars 1.5.0
     return df1.collect()
 
 
