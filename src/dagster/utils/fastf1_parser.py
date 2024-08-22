@@ -229,7 +229,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             )
         )
         results = df.select([*selection, pl.col("lateral_acceleration")])
-        # divide by 9.80665 to get g's
+        # divide by 9.80665 to get g's if required
         context.log.debug("Added lateral acceleration.")
         return results
 
@@ -249,7 +249,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             )
         )
         results = df.select([*selection, pl.col("longitudinal_acceleration")])
-        # divide by 9.80665 to get g's
+        # divide by 9.80665 to get g's if required.
         context.log.debug("Added longitudinal acceleration.")
         return results
 
