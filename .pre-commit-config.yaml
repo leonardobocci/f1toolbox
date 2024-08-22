@@ -10,7 +10,7 @@ repos:
       - id: trailing-whitespace
         name: Check for trailing whitespaces (auto-fixes)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.8
+    rev: v0.6.1
     hooks:
       - id: ruff-format
         name: ruff formatter
@@ -20,7 +20,7 @@ repos:
         name: ruff linter
         #exclude: test_example_module.py|run_pipeline.py
   - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.1.0
+    rev: 3.1.1
     hooks:
       - id: sqlfluff-fix
         name: sqlfluff-fix
@@ -28,7 +28,7 @@ repos:
         #  - `--show-lint-violations` shows issues to not require running `sqlfluff lint`
         #  - `--processes 0` to use maximum parallelism
         # By default, this hook applies all rules.
-        entry: sqlfluff fix --dialect=clickhouse --show-lint-violations --processes 0
+        entry: sqlfluff fix src/dbt/models --dialect=clickhouse --show-lint-violations --processes 0
         language: python
         description: "Fixes sql lint errors with `SQLFluff`"
         types: [sql]

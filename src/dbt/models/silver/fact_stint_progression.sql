@@ -25,7 +25,7 @@ best_laps_on_tyre as (
         driver_code,
         tyre_compound,
         min(lap_time) as best_lap_time_on_tyre
-    from {{ ref('fastf1_laps') }}
+    from timed_laps
     group by session_id, driver_code, tyre_compound
 ),
 
@@ -47,6 +47,41 @@ stint_progression as (
         *,
         ((lap_time / best_lap_time_on_tyre) - 1) as pct_away_from_best_lap
     from joined
+),
+
+regression as (
+    select
+        session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        tyre_compound,
+        count(*) as n,
+        sum(tyre_age_laps) as sum_x,
+        sum(pow(tyre_age_laps, 2)) as sum_of_squares,
+        sum(pct_away_from_best_lap) as sum_y,
+        sum(tyre_age_laps * pct_away_from_best_lap) as sum_xy
+    from stint_progression
+    group by
+        session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        tyre_compound
+),
+
+tyre_age_factor as (
+    /*Calculate the slopes (factor) of gap from best lap depending on tyre age,
+    for each session, driver, constructor, compound*/
+    select
+        session_id,
+        event_id,
+        constructor_name,
+        driver_code,
+        tyre_compound,
+        (n * sum_xy - sum_x * sum_y)
+        / (n * sum_of_squares - sum_x * sum_x) as tyre_age_factor
+    from regression
 )
 
-select * from stint_progression
+select * from tyre_age_factor

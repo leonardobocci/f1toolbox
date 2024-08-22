@@ -18,8 +18,6 @@ clean-targets:         # directories to be removed by `dbt clean`
 #https://docs.getdbt.com/docs/configuring-models
 models:
   #https://docs.dagster.io/integrations/dbt/reference#emit-column-level-lineage-as-materialization-metadata
-  +post-hook:
-    - "{{ dagster.log_column_level_metadata() }}"
   f1toolbox:
     # Config indicated by + and applies to all files under models/<DIRECTORYNAME FROM YAML NAME>/
     bronze:
@@ -35,4 +33,4 @@ models:
       +group: silver_tables
     gold:
       +materialized: incremental
-      +group: gold_denormalized_incremental_views
+      +group: gold_incremental_views

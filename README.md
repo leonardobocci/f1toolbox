@@ -11,13 +11,27 @@ sudo apt install pipx
 pipx ensurepath
 sudo pipx ensurepath --global # optional to allow pipx actions with --global argument
 pipx install poetry
-poetry install
+-CREATE NEW TERMINAL
+poetry config virtualenvs.in-project true
 poetry shell (to activate venv)
+poetry install
+
+Pre-commit:
+pre-commit install (for first time installation)
+pre-commit autoupdate (to bump linters)
 
 Dagster (env vars):
 DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
 DAGSTER_HOME="/home/leo/f1/src/dagster/localhome"
-from f1 directory: dagster dev -f src/dagster/__init__.py
+-Add a dagster.yaml file in the localhome directory to prevent concurrency with the following content:
+```
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 1
+```
+-run bash cmd from f1 directory: dagster dev -f src/dagster/__init__.py
 
 DBT (in dbt directory):
 dbt deps (to install column level lineage dagster dependency)
@@ -26,6 +40,8 @@ For now locally to start clickhouse (from root of both f1 project and clickhouse
 cp f1/data/bronze/fastf1 clickhouse/user_files -r
 cp f1/data/bronze/fantasy clickhouse/user_files -r
 
+If fastf1 becomes very slow, need to clear cache:
+fastf1.Cache.clear_cache()
 
 Local k8s:
 kubectl install:
