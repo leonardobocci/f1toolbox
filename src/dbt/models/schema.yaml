@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: car_performance
+    description: >
+      Average accelerations per driver, per session,
+      for circuit zones (braking, acceleration, corner types).
+
+  - name: tyre_performance
+    description: >
+      Average tyre performance per constructor, per event (weekend), per tyre compound,
+      including:
+      1. a factor for tyre aging (can be multiplied by the number of laps a tyre has covered
+                               to obtain a factor of expected laptime reduction from a base laptime).
+      2. a percentage of gap from the best tyre of the weekend.
