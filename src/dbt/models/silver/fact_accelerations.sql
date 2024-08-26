@@ -5,6 +5,22 @@ bronze_telemetry as (
     from {{ ref('fastf1_telemetry') }}
 ),
 
+dim_sessions as (
+    select
+        event_id,
+        session_id as right_session_id
+    from {{ ref('dim_sessions') }}
+),
+
+telemetry as (
+    select
+        a.*,
+        b.event_id
+    from bronze_telemetry as a
+    inner join dim_sessions as b
+        on a.session_id = b.right_session_id
+),
+
 corner_profiles as (
     select
         *,
@@ -19,7 +35,7 @@ corner_profiles as (
             when speed > 170 and lateral_acceleration > 8 then 'FAST_CORNER'
             else 'STRAIGHT'
         end as corner_status
-    from bronze_telemetry
+    from telemetry
 ),
 
 braking_and_accelerations as (

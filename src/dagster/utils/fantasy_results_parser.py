@@ -44,9 +44,8 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
             # Get fantasy points and create dataframe of length of number of races
             fantasy_points = file[i]["race_results"][0]["results_per_race_list"]
             fantasy = pl.LazyFrame(fantasy_points, schema=["points_scored"])
-            # Get ID and color and assign as literals
+            # Get ID and assign as literal
             fantasy = fantasy.with_columns(pl.lit(file[i]["abbreviation"]).alias("id"))
-            fantasy = fantasy.with_columns(pl.lit(file[i]["color"]).alias("color"))
             try:
                 assert (
                     len(file[i]["race_results"][0]["fantasy_results"])

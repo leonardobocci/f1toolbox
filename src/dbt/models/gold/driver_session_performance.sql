@@ -1,3 +1,5 @@
+--TODO: ADJUST using tyre_event_performance age and tyre gap factors
+
 with
 
 accelerations as (select * from {{ ref('fact_accelerations') }}),
@@ -6,10 +8,11 @@ slow_corners as (
     select
         session_id,
         car_number,
+        event_id,
         avg(lateral_acceleration) as slow_corners_avg_lateral_acceleration
     from accelerations
     where corner_status = 'SLOW_CORNER'
-    group by session_id, car_number
+    group by session_id, car_number, event_id
 ),
 
 medium_corners as (
@@ -34,7 +37,10 @@ fast_corners as (
 
 lateral_averages as (
     select
-        a.*,
+        a.session_id,
+        a.car_number,
+        a.event_id,
+        a.slow_corners_avg_lateral_acceleration,
         b.medium_corners_avg_lateral_acceleration,
         c.fast_corners_avg_lateral_acceleration
     from slow_corners as a
@@ -68,7 +74,9 @@ acceleration_zones as (
 
 longitudinal_averages as (
     select
-        a.*,
+        a.session_id,
+        a.car_number,
+        a.braking_zones_avg_longitudinal_acceleration,
         b.acceleration_zones_avg_longitudinal_acceleration
     from braking_zones as a
     inner join acceleration_zones as b
@@ -87,8 +95,9 @@ max_speeds as (
 
 car_performance as (
     select
-        a.session_id,
-        a.car_number,
+        a.session_id as left_session_id,
+        a.car_number as left_car_number,
+        a.event_id as left_event_id,
         a.slow_corners_avg_lateral_acceleration,
         a.medium_corners_avg_lateral_acceleration,
         a.fast_corners_avg_lateral_acceleration,
@@ -102,6 +111,22 @@ car_performance as (
     inner join
         max_speeds as c
         on a.session_id = c.session_id and a.car_number = c.car_number
+),
+
+dim_assets as (select * from {{ ref('dim_assets') }}),
+
+joined_car_performance as (
+    select
+        b.*,
+        a.slow_corners_avg_lateral_acceleration,
+        a.medium_corners_avg_lateral_acceleration,
+        a.fast_corners_avg_lateral_acceleration,
+        a.braking_zones_avg_longitudinal_acceleration,
+        a.acceleration_zones_avg_longitudinal_acceleration,
+        a.max_speed
+    from car_performance as a
+    inner join dim_assets as b
+        on a.left_car_number = b.driver_number and a.left_event_id = b.event_id
 )
 
-select * from car_performance
+select * from joined_car_performance

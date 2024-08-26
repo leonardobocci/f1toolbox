@@ -1,15 +1,23 @@
 version: 2
 
 models:
-  - name: car_performance
+  - name: driver_session_performance
     description: >
+      [Gold layer (ready for consumption)]
       Average accelerations per driver, per session,
       for circuit zones (braking, acceleration, corner types).
 
-  - name: tyre_performance
+  - name: tyre_event_performance
     description: >
+      [Gold layer (ready for consumption)]
       Average tyre performance per constructor, per event (weekend), per tyre compound,
       including:
       1. a factor for tyre aging (can be multiplied by the number of laps a tyre has covered
                                to obtain a factor of expected laptime reduction from a base laptime).
       2. a percentage of gap from the best tyre of the weekend.
+
+  - name: constructor_event_performance
+    description: >
+      [Marts layer (ready for reporting)]
+      Constructor normalized scores in each performance area:
+      (cornering types, braking, acceleration, top speed).

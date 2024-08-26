@@ -21,9 +21,9 @@ timed_laps as (
 best_laps_on_tyre as (
 
     select
-        session_id,
-        driver_code,
-        tyre_compound,
+        session_id as right_session_id,
+        driver_code as right_driver_code,
+        tyre_compound as right_tyre_compound,
         min(lap_time) as best_lap_time_on_tyre
     from timed_laps
     group by session_id, driver_code, tyre_compound
@@ -37,9 +37,9 @@ joined as (
     left join
         best_laps_on_tyre as b
         on
-            a.session_id = b.session_id
-            and a.driver_code = b.driver_code
-            and a.tyre_compound = b.tyre_compound
+            a.session_id = b.right_session_id
+            and a.driver_code = b.right_driver_code
+            and a.tyre_compound = b.right_tyre_compound
 ),
 
 stint_progression as (

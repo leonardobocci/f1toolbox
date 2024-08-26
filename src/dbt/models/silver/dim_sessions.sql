@@ -1,8 +1,8 @@
 with
 
-fastf1_events as (
+dim_events as (
 
-    select * from {{ ref('fastf1_events') }}
+    select * from {{ ref('dim_events') }}
 
 ),
 
@@ -12,16 +12,31 @@ fastf1_sessions as (
 
 ),
 
-fastf1_events_sessions as (
+dim_events_sessions as (
 
     select
-        a.*,
+        a.event_id,
+        a.season,
+        a.round_number,
+        a.session_number,
+        a.event_name,
+        a.country_key,
+        a.circuit_key,
+        a.country_code,
+        a.circuit_shortname,
+        a.count_slow_corners,
+        a.count_medium_corners,
+        a.count_fast_corners,
+        a.straight_length,
+        a.count_short_accelerations,
+        a.count_medium_accelerations,
+        a.count_long_accelerations,
         b.session_id,
         b.session_name,
         b.session_type,
         b.utc_start_datetime,
         b.utc_end_datetime
-    from fastf1_events as a
+    from dim_events as a
     inner join
         fastf1_sessions as b
         on a.event_id = b.event_id
@@ -36,8 +51,8 @@ fastf1_weathers as (
 session_weathers as (
 
     select
-        session_id,
-        event_id,
+        session_id as right_session_id,
+        event_id as right_event_id,
         avg(air_temperature) as avg_air_temperature,
         avg(track_temperature) as avg_track_temperature,
         avg(humidity) as avg_humidity,
@@ -51,7 +66,7 @@ session_weathers as (
         event_id
 ),
 
-fastf1_events_sessions_weathers as (
+dim_events_sessions_weathers as (
 
     select
         a.*,
@@ -60,18 +75,23 @@ fastf1_events_sessions_weathers as (
         b.avg_humidity,
         b.avg_wind_speed,
         b.raining_percentage_of_session_time
-    from fastf1_events_sessions as a
+    from dim_events_sessions as a
     inner join
         session_weathers as b
         on
-            a.session_id = b.session_id
-            and a.event_id = b.event_id
+            a.session_id = b.right_session_id
+            and a.event_id = b.right_event_id
 
 ),
 
 fantasy_races as (
 
-    select * from {{ ref('fantasy_races') }}
+    select
+        round_number as right_round_number,
+        season as right_season,
+        event_format,
+        has_fantasy_results
+    from {{ ref('fantasy_races') }}
 
 ),
 
@@ -80,34 +100,10 @@ fastf1_joined_fantasy as (
         a.*,
         b.event_format,
         b.has_fantasy_results
-    from fastf1_events_sessions_weathers as a
+    from dim_events_sessions_weathers as a
     left join
         fantasy_races as b
-        on a.round_number = b.round_number and a.season = b.season
-),
-
-dim_circuits as (
-
-    select * from {{ ref('dim_circuits') }}
-
-),
-
-dim_track_sessions as (
-
-    select
-        a.*,
-        b.count_slow_corners,
-        b.count_medium_corners,
-        b.count_fast_corners,
-        b.straight_length,
-        b.count_short_accelerations,
-        b.count_medium_accelerations,
-        b.count_long_accelerations
-    from fastf1_joined_fantasy as a
-    inner join
-        dim_circuits as b
-        on a.circuit_key = b.circuit_key and a.season = b.season
-
+        on a.round_number = b.right_round_number and a.season = b.right_season
 )
 
-select * from dim_track_sessions
+select * from fastf1_joined_fantasy

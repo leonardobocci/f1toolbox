@@ -37,9 +37,8 @@ def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
     df = df.with_columns((last_modified_expr).alias("last_updated"))
     df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="full")
     df1 = df1.select(
-        *set(lookup_df.columns) - set(["id", "color"]),
+        *set(lookup_df.columns) - set(["id"]),
         pl.coalesce("id", "abbreviation").alias("id"),
-        pl.coalesce("color", "color_right").alias("color"),
         pl.col("last_updated").fill_null(strategy="min"),
     )
     # this collect should not be required,
@@ -181,14 +180,14 @@ def bronze_fantasy_current_constructors(context):
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
         )
-        .select("id", "color")
+        .select("id")
         .unique()
     )
     constructor_lookup = unique_constructor_list.join(
         constructor_lookup, on="id", how="full"
     )
     constructor_lookup = constructor_lookup.select(
-        pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
+        pl.coalesce("id", "id_right").alias("id"), "name", "active"
     )
     constructors = format_landing_df("constructors", constructor_lookup)
     polars_to_parquet(
@@ -217,12 +216,12 @@ def bronze_fantasy_current_drivers(context):
         pl.scan_parquet(
             f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
         )
-        .select("id", "color")
+        .select("id")
         .unique()
     )
     drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="full")
     drivers_lookup = drivers_lookup.select(
-        pl.coalesce("id", "id_right").alias("id"), "name", "active", "color"
+        pl.coalesce("id", "id_right").alias("id"), "name", "active"
     )
     drivers = format_landing_df("drivers", drivers_lookup)
     polars_to_parquet(

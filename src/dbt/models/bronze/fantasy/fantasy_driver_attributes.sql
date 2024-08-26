@@ -1,7 +1,6 @@
 SELECT
     id AS result_id,
     round_number,
-    color,
     price,
     price_change,
     points_scored,

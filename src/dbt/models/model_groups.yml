@@ -6,9 +6,12 @@ groups:
   - name: bronze_fastf1_views
     owner:
       name: leo
-  - name: silver_tables
+  - name: silver_views
     owner:
       name: leo
   - name: gold_incremental_views
+    owner:
+      name: leo
+  - name: marts_incremental_views
     owner:
       name: leo

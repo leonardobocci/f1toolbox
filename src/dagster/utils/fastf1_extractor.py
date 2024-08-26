@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import fastf1
+import fastf1.plotting as f1plot
 import flatdict
 import polars as pl
 
@@ -208,6 +209,25 @@ def _extract_session_telemetry(
     return session_id
 
 
+def extract_tyre_compounds(context, year: int, extraction_metadata: dict) -> dict:
+    session = fastf1.get_session(year=year, gp=1, identifier=5)
+    tyre_dict = f1plot.get_compound_mapping(session)
+    tyre_compounds = (
+        pl.from_dict(tyre_dict)
+        .transpose(include_header=True, header_name="compound")
+        .rename({"column_0": "color"})
+    )
+    tyre_compounds = tyre_compounds.with_columns(pl.lit(year).alias("season"))
+    polars_to_parquet(
+        filedir=f"{constants.landing_FASTF1_PATH}/{year}/tyre_compounds",
+        filename=f"{year}",
+        data=tyre_compounds,
+        context=context,
+    )
+    extraction_metadata["saved_tyres"].append({year: list(tyre_dict.keys())})
+    return extraction_metadata
+
+
 def extract_fastf1_signals(
     context, year: int, session_num: int, event_num: int, extraction_metadata: dict
 ) -> dict:
@@ -268,6 +288,7 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
         "saved_telemetry": [],
         "saved_results": [],
         "saved_circuits": [],
+        "saved_tyres": [],
         "session_level_errors": [],
     }
     event_calendar = fastf1.get_event_schedule(year)
@@ -278,6 +299,8 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
             fastf1.get_events_remaining(dt=datetime.today(), include_testing=False)
         )
         num_events = num_events - remaining_num_events
+    # get tyre compounds for this season
+    extraction_metadata = extract_tyre_compounds(context, year, extraction_metadata)
     context.log.info(f"Extracting {num_events} events for {year}")
     while event_num <= num_events:
         for session_num in constants.SESSIONS:
