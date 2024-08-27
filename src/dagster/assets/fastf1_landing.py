@@ -18,4 +18,5 @@ def landing_fastf1_assets(context):
     context.add_output_metadata(
         {"Total number of Events": MetadataValue.int(meta["total_events"])}
     )
+    context.log.info(f"Recorded the following metadata: {meta}.")
     return

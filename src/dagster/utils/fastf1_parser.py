@@ -116,6 +116,7 @@ def parse_weather_timestamps(
 ) -> pl.LazyFrame:
     """Given a weather dataframe, parse the timestamp and return a new column with the time in seconds from the start of the session."""
     selection = df.columns
+    sessions_df = sessions_df.with_columns(id=pl.col("id").cast(pl.Int32))
     df = df.join(sessions_df, left_on="session_id", right_on="id")
     df = df.with_columns(
         seconds_from_session_start=pl.col("Time") / 1e9  # from nanoseconds to seconds
