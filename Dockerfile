@@ -20,8 +20,6 @@ WORKDIR /app
 COPY poetry.lock pyproject.toml ./
 # Install the dependencies and clear the cache afterwards.
 RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
-# Ensure __init__.py exists in the app directory to allow dagster module discovery
-RUN touch /app/__init__.py
 
 # Now let's build the runtime image from the builder.
 FROM builder AS runtime
@@ -31,3 +29,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY ./src ./src/
+
+RUN poetry run dagster-dbt project prepare-and-package --file app/src/dagster/dbt_project.py
