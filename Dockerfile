@@ -28,7 +28,6 @@ FROM builder AS runtime
 
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
-ENV DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY ./src ./src/
