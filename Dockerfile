@@ -30,4 +30,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY ./src ./src/
 
-RUN poetry run dagster-dbt project prepare-and-package --file app/src/dagster/dbt_project.py
+RUN poetry run dagster-dbt project prepare-and-package --file /app/src/dagster/dbt_project.py
