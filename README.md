@@ -57,5 +57,5 @@ sudo apt-get install helm
 minikube delete --all (to kill previously running clusters)
 minikube start
 helm repo add dagster https://dagster-io.github.io/helm
-helm install localname-dagster dagster/dagster --values f1/src/dagster/user_deployment.yaml
+helm install localname-dagster dagster/dagster --values /home/leo/Desktop/dev/f1/src/dagster/user_deployment.yaml
 kubectl port-forward service/dagster-dagster-webserver 8081:80

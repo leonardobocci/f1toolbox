@@ -14,10 +14,8 @@ ENV POETRY_CACHE_DIR=/opt/.cache
 
 RUN pip install "poetry==${POETRY_VERSION}"
 
-WORKDIR /app
-
 # --- Reproduce the environment ---
-COPY pyproject.toml .
+COPY poetry.lock pyproject.toml /app/
 # Install the dependencies and clear the cache afterwards.
 RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
@@ -28,4 +26,4 @@ ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-COPY ./src .
+COPY ./src /app/src
