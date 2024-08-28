@@ -7,6 +7,6 @@ dagster-user-deployments:
         tag: latest
         pullPolicy: Always
       dagsterApiGrpcArgs:
-        - "-f"
+        - "-m"
         - "/app/src/dagster/definitions.py"
       port: 8081
