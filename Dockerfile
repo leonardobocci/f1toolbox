@@ -1,4 +1,4 @@
-FROM python:3.10.12 as builder
+FROM python:3.10.12 AS builder
 
 # --- Install Poetry ---
 ARG POETRY_VERSION=1.8
@@ -14,16 +14,20 @@ ENV POETRY_CACHE_DIR=/opt/.cache
 
 RUN pip install "poetry==${POETRY_VERSION}"
 
+WORKDIR /app
+
 # --- Reproduce the environment ---
-COPY poetry.lock pyproject.toml /app/
+COPY poetry.lock pyproject.toml ./
 # Install the dependencies and clear the cache afterwards.
 RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
+# Ensure __init__.py exists in the app directory to allow dagster module discovery
+RUN touch /app/__init__.py
 
 # Now let's build the runtime image from the builder.
-FROM builder as runtime
+FROM builder AS runtime
 
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-COPY ./src /app/src
+COPY ./src ./src/
