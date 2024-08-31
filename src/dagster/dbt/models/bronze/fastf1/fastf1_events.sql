@@ -6,7 +6,6 @@ SELECT
     Circuit_Key AS circuit_key,-- noqa: CP02, AL09
     Circuit_ShortName AS circuit_shortname,-- noqa: CP02, AL09
     season,
-    round_number,
-    session_number
+    round_number
 FROM
     file('fastf1/events.parquet', 'Parquet')

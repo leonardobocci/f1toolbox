@@ -13,7 +13,11 @@ from src.dagster.assets import (
     fastf1_landing,
 )
 from src.dagster.dbt_project import dbt_project
-from src.dagster.jobs import landing_fantasy_full_job, landing_fastf1_full_job
+from src.dagster.jobs import (
+    bronze_dbt_views_job,
+    landing_fantasy_full_job,
+    landing_fastf1_full_job,
+)
 
 materialization_condition = AutomationCondition.eager()  # TODO: figure out how to add all parent partition materialized requirement to prevent trigger on eahc partition load.
 
@@ -29,7 +33,7 @@ bronze_fastf1_assets = load_assets_from_modules(
     [fastf1_bronze], automation_condition=materialization_condition
 )
 
-all_jobs = [landing_fastf1_full_job, landing_fantasy_full_job]
+all_jobs = [landing_fastf1_full_job, landing_fantasy_full_job, bronze_dbt_views_job]
 
 defs = Definitions(
     assets=[

@@ -95,7 +95,7 @@ max_speeds as (
 
 car_performance as (
     select
-        a.session_id as left_session_id,
+        a.session_id,
         a.car_number as left_car_number,
         a.event_id as left_event_id,
         a.slow_corners_avg_lateral_acceleration,
@@ -117,7 +117,8 @@ dim_assets as (select * from {{ ref('dim_assets') }}),
 
 joined_car_performance as (
     select
-        b.*,
+        da.*,
+        a.session_id,
         a.slow_corners_avg_lateral_acceleration,
         a.medium_corners_avg_lateral_acceleration,
         a.fast_corners_avg_lateral_acceleration,
@@ -125,8 +126,10 @@ joined_car_performance as (
         a.acceleration_zones_avg_longitudinal_acceleration,
         a.max_speed
     from car_performance as a
-    inner join dim_assets as b
-        on a.left_car_number = b.driver_number and a.left_event_id = b.event_id
+    inner join dim_assets as da
+        on
+            a.left_car_number = da.driver_number
+            and a.left_event_id = da.event_id
 )
 
 select * from joined_car_performance

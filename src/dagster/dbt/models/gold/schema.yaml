@@ -79,19 +79,16 @@ models:
           - relationships:
               to: ref('dim_events')
               field: event_id
-      - name: constructor_name
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('dim_assets')
-              field: constructor_name
       - name: tyre_compound
         data_tests:
           - not_null
           - relationships:
               to: ref('fastf1_tyres')
               field: compound
-      - name: pct_away_from_best_tyre
+      - name: avg_tyre_age_factor
+        data_tests:
+          - not_null
+      - name: avg_pct_away_from_best_tyre
         data_tests:
           - not_null
           - column_values_greater_than:

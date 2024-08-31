@@ -56,8 +56,7 @@ def polars_to_parquet(
         try:
             data.sink_parquet(f"{filedir}/{filename}.parquet")
         except Exception as e:
-            print(e)
-            context.log.warning(
+            context.log.debug(
                 f"Could not write parquet file using sink_parquet. Trying to collect and write. {e}"
             )
             data.collect(streaming=True).write_parquet(f"{filedir}/{filename}.parquet")

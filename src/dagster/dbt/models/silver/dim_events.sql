@@ -18,7 +18,6 @@ dim_events as (
         a.event_id,
         a.season,
         a.round_number,
-        a.session_number,
         a.event_name,
         a.country_key,
         a.circuit_key,

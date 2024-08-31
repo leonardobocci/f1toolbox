@@ -10,9 +10,7 @@ from src.dagster.utils.iomanager import polars_to_parquet
 from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
 
 
-def _extract_event(
-    context, session: fastf1.core.Session, year: int, event_num: int, session_num: int
-) -> dict:
+def extract_event(context, year: int, event_num: int) -> dict:
     """Extract event info from a session object and save to landing zone"""
 
     def extract_circuit_info(year: int, circuit_key: int) -> tuple[pl.DataFrame, int]:
@@ -21,6 +19,10 @@ def _extract_event(
         track_map_rotation_degrees = circuit_info.rotation
         return corners, track_map_rotation_degrees
 
+    session = fastf1.get_session(year=year, gp=event_num, identifier=4)
+    if not session.f1_api_support:
+        raise Exception("Fast F1 does not support this session")
+    session.load(laps=False, telemetry=False, weather=False, messages=False)
     event = {
         "id": session.session_info["Meeting"]["Key"],
         "name": session.session_info["Meeting"]["Name"],
@@ -32,7 +34,6 @@ def _extract_event(
     flat_event = dict(flat_event)
     flat_event["season"] = year
     flat_event["round_number"] = event_num
-    flat_event["session_number"] = session_num
 
     # Extract circuit information
     circuit_key = flat_event["Circuit_Key"]
@@ -89,14 +90,15 @@ def _extract_event(
 
 
 def _extract_session(
-    context, session: fastf1.core.Session, event_info: dict, year: int
+    context, session: fastf1.core.Session, session_num: int, event_id: str, year: int
 ) -> int:
     """Extract session data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
     session = {
         "id": session.session_info["Key"],
-        "event_id": event_info["id"],
+        "session_number": session_num,
+        "event_id": event_id,
         "name": session.session_info["Name"],
         "type": session.session_info["Type"],
         "start_date": session.session_info["StartDate"].isoformat(),
@@ -107,9 +109,7 @@ def _extract_session(
     return session["id"]
 
 
-def _extract_session_weather(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_weather(context, session: fastf1.core.Session, year: int) -> int:
     """Extract weather data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -131,9 +131,7 @@ def _extract_session_weather(
     return session_id
 
 
-def _extract_session_results(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_results(context, session: fastf1.core.Session, year: int) -> int:
     """Extract results data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -152,9 +150,7 @@ def _extract_session_results(
     return session_id
 
 
-def _extract_session_laps(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_laps(context, session: fastf1.core.Session, year: int) -> int:
     """Extract lap data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -173,9 +169,7 @@ def _extract_session_laps(
     return session_id
 
 
-def _extract_session_telemetry(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_telemetry(context, session: fastf1.core.Session, year: int) -> int:
     """Extract telemetry data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -229,25 +223,25 @@ def extract_tyre_compounds(context, year: int, extraction_metadata: dict) -> dic
 
 
 def extract_fastf1_signals(
-    context, year: int, session_num: int, event_num: int, extraction_metadata: dict
+    context,
+    year: int,
+    session_num: int,
+    event_num: int,
+    event_id: str,
+    extraction_metadata: dict,
 ) -> dict:
     session = fastf1.get_session(year=year, gp=event_num, identifier=session_num)
-    if not session.f1_api_support:
-        raise Exception("Fast F1 does not support this session")
     session.load(laps=True, telemetry=True, weather=True, messages=False)
-    # Collect general event information
-    event_info = _extract_event(context, session, year, event_num, session_num)
-    context.log.info(f"{year}_{event_num}_{session_num} saved")
     # Collect session information
-    saved_session = _extract_session(context, session, event_info, year)
+    saved_session = _extract_session(context, session, session_num, event_id, year)
     extraction_metadata["saved_sessions"].append(saved_session)
     context.log.info(f"{year}_{event_num}_{session_num} session saved")
     # Collect session results
-    saved_results_session = _extract_session_results(context, session, event_info, year)
+    saved_results_session = _extract_session_results(context, session, year)
     extraction_metadata["saved_results"].append(saved_results_session)
     context.log.info(f"{year}_{event_num}_{session_num} results saved")
     # Collect event weather data
-    saved_weather_session = _extract_session_weather(context, session, event_info, year)
+    saved_weather_session = _extract_session_weather(context, session, year)
     if not saved_weather_session:
         extraction_metadata["session_level_errors"].append(
             f"missing_weather_{year}_{event_num}_{session_num}"
@@ -257,13 +251,11 @@ def extract_fastf1_signals(
         extraction_metadata["saved_weathers"].append(saved_weather_session)
         context.log.info(f"{year}_{event_num}_{session_num} weather saved")
     # Collect lap data
-    saved_lap_session = _extract_session_laps(context, session, event_info, year)
+    saved_lap_session = _extract_session_laps(context, session, year)
     extraction_metadata["saved_laps"].append(saved_lap_session)
     context.log.info(f"{year}_{event_num}_{session_num} laps saved")
     # Collect telemetry data
-    saved_telemetry_session = _extract_session_telemetry(
-        context, session, event_info, year
-    )
+    saved_telemetry_session = _extract_session_telemetry(context, session, year)
     if not saved_telemetry_session:
         extraction_metadata["session_level_errors"].append(
             f"missing_telemetry_{year}_{event_num}_{session_num}"
@@ -303,10 +295,18 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
     extraction_metadata = extract_tyre_compounds(context, year, extraction_metadata)
     context.log.info(f"Extracting {num_events} events for {year}")
     while event_num <= num_events:
+        # Collect general event information
+        event_info = extract_event(context, year, event_num)
+        event_id = event_info["id"]
+        context.log.info(f"{year}_{event_num} event details saved")
         for session_num in constants.SESSIONS:
             extraction_metadata = extract_fastf1_signals(
-                context, year, session_num, event_num, extraction_metadata
+                context, year, session_num, event_num, event_id, extraction_metadata
             )
         extraction_metadata["saved_events"].append(f"{year}_{event_num}")
+        context.log.info(f"{year}_{event_num} event signals saved")
         event_num += 1
     return extraction_metadata
+
+
+id

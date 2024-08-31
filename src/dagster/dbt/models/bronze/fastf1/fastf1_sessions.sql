@@ -1,5 +1,6 @@
 SELECT
     id AS session_id,
+    session_number,
     event_id,
     name AS session_name,
     type AS session_type,
