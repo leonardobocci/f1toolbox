@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: constructor_event_performance
+    description: >
+      [Marts layer (ready for reporting)]
+      Constructor normalized scores in each performance area:
+      (cornering types, braking, acceleration, top speed).
+    columns:
+      - name: constructor_name
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_assets')
+              field: constructor_name
+      - name: event_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_events')
+              field: event_id
+      - name: normalized_slow_corners
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
+      - name: normalized_medium_corners
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
+      - name: normalized_fast_corners
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
+      - name: normalized_braking_zones
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
+      - name: normalized_acceleration_zones
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
+      - name: normalized_top_speed
+        data_tests:
+          - not_null
+          - column_values_in_range:
+              min_value: 0
+              max_value: 10
