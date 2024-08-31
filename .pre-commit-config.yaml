@@ -28,7 +28,7 @@ repos:
         #  - `--show-lint-violations` shows issues to not require running `sqlfluff lint`
         #  - `--processes 0` to use maximum parallelism
         # By default, this hook applies all rules.
-        entry: sqlfluff fix src/dagster/dbt/models --dialect=clickhouse --show-lint-violations --processes 0
+        entry: sqlfluff fix src/dagster/dbt/models src/dagster/dbt/tests --dialect=clickhouse --show-lint-violations --processes 0
         language: python
         description: "Fixes sql lint errors with `SQLFluff`"
         types: [sql]

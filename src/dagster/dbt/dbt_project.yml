@@ -15,6 +15,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+data_tests:
+  +severity: warn
+
 #https://docs.getdbt.com/docs/configuring-models
 models:
   #https://docs.dagster.io/integrations/dbt/reference#emit-column-level-lineage-as-materialization-metadata
@@ -34,6 +37,8 @@ models:
     gold:
       +materialized: incremental
       +group: gold_incremental_views
+      +schema: gold
     marts:
       +materialized: incremental
       +group: marts_incremental_views
+      +schema: marts

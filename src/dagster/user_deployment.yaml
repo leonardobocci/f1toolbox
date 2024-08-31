@@ -1,7 +1,7 @@
 dagster-user-deployments:
   enabled: true
   deployments:
-    - name: "f1toolbox-dagster"
+    - name: "f1toolbox-core"
       image:
         repository: "leobocci/f1toolbox-dagster"
         tag: latest
