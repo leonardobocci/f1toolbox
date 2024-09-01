@@ -32,7 +32,7 @@ run_coordinator:
   config:
     max_concurrent_runs: 1
 ```
--run bash cmd from f1 directory: dagster dev -f src/dagster/`__init__`.py
+-run bash cmd from f1 directory: dagster dev -f src/dagster/\_\_init__.py
 
 For now locally to start clickhouse (from root of both f1 project and clickhouse dir): \
 cp f1/data/bronze/fastf1 clickhouse/user_files -r \
