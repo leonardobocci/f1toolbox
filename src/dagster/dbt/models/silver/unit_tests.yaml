@@ -1,0 +1,11 @@
+unit_tests:
+  - name: test_tyre_age_regression
+    description: Based on fake laps, test that the impact of tyre age on expected lap time is correct. Can be obtained by using excel slope formula with x:tyre age laps, y:pct away from best lap
+    model: fact_tyre_aging
+    given:
+      - input: ref ('fastf1_laps')
+        format: csv
+        fixture: fastf1_laps
+    expect:
+      format: csv
+      fixture: fact_tyre_aging

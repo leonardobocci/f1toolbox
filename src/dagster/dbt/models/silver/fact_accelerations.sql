@@ -27,7 +27,7 @@ corner_profiles as (
         case
             --threshold for a corner increases with speed (units in m/s^2)
             when
-                speed between 0 and 100 and lateral_acceleration > 2
+                speed between 1 and 100 and lateral_acceleration > 2
                 then 'SLOW_CORNER'
             when
                 speed between 100 and 170 and lateral_acceleration > 5
