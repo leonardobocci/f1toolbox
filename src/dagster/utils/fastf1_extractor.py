@@ -307,6 +307,3 @@ def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
         context.log.info(f"{year}_{event_num} event signals saved")
         event_num += 1
     return extraction_metadata
-
-
-id
