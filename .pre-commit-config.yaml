@@ -10,7 +10,7 @@ repos:
       - id: trailing-whitespace
         name: Check for trailing whitespaces (auto-fixes)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.2
+    rev: v0.6.8
     hooks:
       - id: ruff-format
         name: ruff formatter
@@ -20,7 +20,7 @@ repos:
         name: ruff linter
         #exclude: test_example_module.py|run_pipeline.py
   - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.1.1
+    rev: 3.2.0
     hooks:
       - id: sqlfluff-fix
         name: sqlfluff-fix
