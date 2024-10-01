@@ -114,8 +114,11 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
                     pl.Series(name="price", values=price_list).cast(pl.Float64)
                 )
             except (AssertionError, IndexError):
+                context.log.warning(
+                    f"Price not found in fantasy file: {result_type} Number: {i}. Adding none values instead."
+                )
                 fantasy = fantasy.with_columns(
-                    pl.Series(name="price", values=[None]).cast(pl.Float64)
+                    pl.lit(None).cast(pl.Float64).alias("price")
                 )
             try:
                 # Will not work for 2022, price change data is not available
@@ -127,8 +130,11 @@ def parse_results(context, result_type: str) -> pl.DataFrame:
                     )
                 )
             except (AssertionError, IndexError):
+                context.log.warning(
+                    f"Change in price not found in fantasy file: {result_type} Number: {i}. Adding none values instead."
+                )
                 fantasy = fantasy.with_columns(
-                    pl.Series(name="price_change", values=[None]).cast(pl.Float64)
+                    pl.lit(None).cast(pl.Float64).alias("price_change")
                 )
             fantasy = fantasy.with_columns(pl.lit(year).alias("season"))
             fantasy = fantasy.with_columns(
