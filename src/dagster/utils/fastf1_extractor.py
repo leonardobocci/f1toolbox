@@ -4,12 +4,14 @@ import fastf1
 import fastf1.plotting as f1plot
 import flatdict
 import polars as pl
+import retry
 
 from src.dagster.assets import constants
 from src.dagster.utils.iomanager import polars_to_parquet
 from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
 
 
+@retry.retry(exceptions=fastf1.core.DataNotLoadedError, tries=5, delay=3)
 def extract_event(context, year: int, event_num: int) -> dict:
     """Extract event info from a session object and save to landing zone"""
 
@@ -222,6 +224,7 @@ def extract_tyre_compounds(context, year: int, extraction_metadata: dict) -> dic
     return extraction_metadata
 
 
+@retry.retry(exceptions=fastf1.core.DataNotLoadedError, tries=5, delay=3)
 def extract_fastf1_signals(
     context,
     year: int,
