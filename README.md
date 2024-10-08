@@ -1,4 +1,9 @@
-Local deployment:
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
+Target Architecture:
+[Architecture diagram](docs/f1toolbox_architecture.png)
+
+Local deployment steps:
 
 Clickhouse:
 https://clickhouse.com/docs/en/install#quick-install \
