@@ -76,7 +76,9 @@ class GCSPolarsParquetIOManager(IOManager):
                     )
                     data.collect(streaming=True).write_parquet(f)
             else:
-                raise NotImplementedError("Data type not supported")
+                raise NotImplementedError(
+                    f"Data type not supported. Received: {type(data)}. Supported types: pl.LazyFrame, pl.DataFrame"
+                )
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
         with self.fs.open(
