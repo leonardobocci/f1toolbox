@@ -24,6 +24,21 @@ def get_request(context, url: str, params: dict = None) -> dict:
 
 @asset(
     group_name="landing_fantasy_files",
+    compute_kind="python",
+    io_manager_key="gcs_json_fantasy_landing_io_manager",
+)
+def landing_fantasy_current_assets(context):
+    """Save raw data from f1fantasytools about current driver and constructor prices in landing zone"""
+    curr_assets = get_request(context, f"{BASE_FANTASY_URL}/{FANTASY_ASSETS_ENDPOINT}")
+    num_constructors = len(curr_assets["constructors"])
+    num_drivers = len(curr_assets["drivers"])
+    context.add_output_metadata({"Constructors": MetadataValue.int(num_constructors)})
+    context.add_output_metadata({"Drivers": MetadataValue.int(num_drivers)})
+    return curr_assets
+
+
+@asset(
+    group_name="landing_fantasy_files",
     partitions_def=fantasy_partitions,
     compute_kind="python",
     io_manager_key="gcs_json_fantasy_landing_io_manager",
@@ -37,8 +52,6 @@ def landing_fantasy_constructor_results(context):
         f"{BASE_FANTASY_URL}/{CONSTRUCTOR_RESULTS_ENDPOINT}",
         params=results_params,
     )
-    num_rows = len(constructor_results_resp)
-    context.add_output_metadata({"Constructors": MetadataValue.int(num_rows)})
     return constructor_results_resp
 
 
@@ -55,8 +68,6 @@ def landing_fantasy_driver_results(context):
     driver_results_resp = get_request(
         context, f"{BASE_FANTASY_URL}/{DRIVER_RESULTS_ENDPOINT}", params=results_params
     )
-    num_rows = len(driver_results_resp)
-    context.add_output_metadata({"Drivers": MetadataValue.int(num_rows)})
     return driver_results_resp
 
 
@@ -73,6 +84,4 @@ def landing_fantasy_races(context):
     races_resp = get_request(
         context, f"{BASE_FANTASY_URL}/{RACES_ENDPOINT}", params=results_params
     )
-    num_rows = len(races_resp["races"])
-    context.add_output_metadata({"Races": MetadataValue.int(num_rows)})
     return races_resp

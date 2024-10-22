@@ -6,12 +6,12 @@ import gcsfs
 import polars as pl
 from google.cloud import storage
 
-from dagster import InputContext, IOManager, OutputContext
+from dagster import InputContext, IOManager, MetadataValue, OutputContext
 from src.dagster.assets import constants
 
 
 def dagster_output_identifier(
-    context: InputContext | OutputContext, optional_prefix: str
+    optional_prefix: str, context: InputContext | OutputContext
 ) -> str:
     "Used to retrieve partition keys for partitioned assets"
     if context.has_partition_key:
@@ -33,21 +33,33 @@ class GcsJsonIoManager(IOManager):
 
     def handle_output(self, context: OutputContext, obj):
         bucket = self.client.bucket(self.bucket_name)
-        blob = bucket.blob(f"{dagster_output_identifier(context, self.prefix)}.json")
+        blob = bucket.blob(f"{dagster_output_identifier(self.prefix, context)}.json")
         blob.upload_from_string(json.dumps(obj))
+        context.add_output_metadata({"Length": MetadataValue.int(len(obj))})
 
     def load_input(self, context: InputContext):
         """Load each of the json partitions."""
         bucket = self.client.bucket(self.bucket_name)
-        partitions = context.asset_partitions_def.get_partition_keys()
-        blobs = [
-            bucket.blob(
-                f"{"/".join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
-            )
-            for partition in partitions
-        ]
-        data = [blob.download_as_string() for blob in blobs]
-        return [json.loads(d) for d in data]
+        try:
+            partitions = context.asset_partitions_def.get_partition_keys()
+            blobs = [
+                bucket.blob(
+                    f"{"/".join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
+                )
+                for partition in partitions
+            ]
+            data = [blob.download_as_string() for blob in blobs]
+            # context.add_input_metadata({"Last modified": MetadataValue.int()})
+            return [json.loads(d) for d in data]
+        except Exception as e:
+            if "Attempting to access partitions def for asset" in str(e):
+                blob = bucket.blob(
+                    f"{dagster_output_identifier(self.prefix, context.upstream_output)}.json"
+                )
+                data = blob.download_as_string()
+                return json.loads(data)
+            else:
+                raise e
 
 
 class GCSPolarsParquetIOManager(IOManager):
@@ -58,14 +70,17 @@ class GCSPolarsParquetIOManager(IOManager):
         self.bucket_name = bucket_name
         self.prefix = optional_prefix
         self.fs = gcsfs.GCSFileSystem(project=project)
+        self.client = storage.Client(project=project)
 
     def handle_output(self, context: OutputContext, data: pl.LazyFrame | pl.DataFrame):
         with self.fs.open(
-            f"{self.bucket_name}/{dagster_output_identifier(context, self.prefix)}.parquet",
+            f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context)}.parquet",
             "wb",
         ) as f:
             if isinstance(data, pl.DataFrame):
                 data.write_parquet(f)
+                num_rows = data.select(pl.len()).item()
+                num_cols = data.width
             elif isinstance(data, pl.LazyFrame):
                 # not supported for all operations so cannot always use (eg. sink to cloud storage not supported, any multi-row operation not supported)
                 try:
@@ -75,14 +90,18 @@ class GCSPolarsParquetIOManager(IOManager):
                         f"Could not write parquet file using sink_parquet. Trying to collect and write. {e}"
                     )
                     data.collect(streaming=True).write_parquet(f)
+                num_rows = data.select(pl.len()).collect().item()
+                num_cols = data.collect_schema().len()
             else:
                 raise NotImplementedError(
                     f"Data type not supported. Received: {type(data)}. Supported types: pl.LazyFrame, pl.DataFrame"
                 )
+            context.add_output_metadata({"Rows": MetadataValue.int(num_rows)})
+            context.add_output_metadata({"Columns": MetadataValue.int(num_cols)})
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
         with self.fs.open(
-            f"{self.bucket_name}/{dagster_output_identifier(context.upstream_output, self.prefix)}.parquet",
+            f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context.upstream_output)}.parquet",
             "rb",
         ) as f:
             return pl.scan_parquet(f)

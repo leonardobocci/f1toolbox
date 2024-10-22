@@ -1,28 +1,10 @@
-import json
-import os
-
 import polars as pl
-from pyarrow.parquet import read_metadata as parquet_metadata
 
-from dagster import MetadataValue, asset
-from src.dagster.assets import constants
+from dagster import asset
 from src.dagster.utils.fantasy_results_parser import parse_results
-from src.dagster.utils.iomanager import polars_to_parquet
 
 
-def read_landing_fantasy_assets():
-    with open(
-        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json", "r"
-    ) as f:
-        file = json.load(f)
-    last_modified = os.path.getmtime(
-        f"{constants.landing_FANTASY_PATH}/current_fantasy_assets.json"
-    )
-    last_modified_expr = pl.from_epoch(pl.lit(last_modified))
-    return file, last_modified_expr
-
-
-def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
+def format_landing_df(df: pl.LazyFrame, lookup_df: pl.LazyFrame) -> pl.DataFrame:
     """Format the constructors and drivers dataframes
 
     arguments:
@@ -31,20 +13,15 @@ def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
 
     returns pl.DataFrame
     """
-    file, last_modified_expr = read_landing_fantasy_assets()
-    df = pl.LazyFrame(file[asset_type])
-    df = df.with_columns((last_modified_expr).alias("last_updated"))
-    df1 = df.join(lookup_df, left_on="abbreviation", right_on="id", how="full")
-    df1 = df1.select(
+    joined = df.join(lookup_df, left_on="abbreviation", right_on="id", how="full")
+    joined = joined.select(
         *set(lookup_df.columns) - set(["id"]),
         pl.coalesce("id", "abbreviation").alias("id"),
-        pl.col("last_updated").fill_null(strategy="min"),
     )
     # this collect should not be required,
-    # but without it there is a weird columnnotfound: abbreviation
-    # note this occurs also if calling collect(streaming=True)
-    # TODO: open an issue in polars github. Last tested on polars 1.5.0
-    return df1.collect()
+    # but without it there is a notYetImplemented polars exception
+    # TODO: open an issue in polars github. Last tested on polars 1.10.0
+    return joined.collect()
 
 
 @asset(
@@ -63,34 +40,27 @@ def bronze_fantasy_rounds(context, landing_fantasy_races):
         for data, partition_key in zip(landing_fantasy_races, partition_keys)
     ]
     df = pl.concat(dfs)
-    num_rows = df.select(pl.len()).collect().item()
-    num_cols = df.collect_schema().len()
-    context.add_output_metadata({"Rows": MetadataValue.int(num_rows)})
-    context.add_output_metadata({"Columns": MetadataValue.int(num_cols)})
     return df
 
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["landing_fantasy_constructor_results"],
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fantasy_bronze_io_manager",
 )
-def bronze_fantasy_constructor_results(context):
+def bronze_fantasy_constructor_results(context, landing_fantasy_constructor_results):
     """Parse landing zone json to parquet file for fantasy constructor results"""
-    # Use the generic result parser to parse the driver results
-    df = parse_results(context, "constructor")
-    # Save them using the iomanager
-    polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH,
-        filename="constructor_fantasy_attributes",
-        data=df,
-        context=context,
+    partition_keys = context.asset_partition_keys_for_input(
+        "landing_fantasy_constructor_results"
     )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
+    # Use the generic result parser to parse the driver results
+    dfs = [
+        parse_results(context, data, "constructor", partition_key)
+        for data, partition_key in zip(
+            landing_fantasy_constructor_results, partition_keys
+        )
+    ]
+    df = pl.concat(dfs, how="diagonal")
     """Received schema:
     [{}] response: list of 10 dictionaries (one per constructor) [ {}, {} ]
         abbreviation: str,
@@ -110,30 +80,24 @@ def bronze_fantasy_constructor_results(context):
             [3] (2023+) weekend_PPM:
                 dict {'id': 'weekend_PPM', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]}
     """
-    return
+    return df
 
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["landing_fantasy_driver_results"],
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fantasy_bronze_io_manager",
 )
-def bronze_fantasy_driver_results(context):
-    """Parse landing zone json to parquet file for fantasy driver results"""
-    # Use the generic result parser to parse the driver results
-    df = parse_results(context, "driver")
-    # Save them using the iomanager
-    polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH,
-        filename="driver_fantasy_attributes",
-        data=df,
-        context=context,
+def bronze_fantasy_driver_results(context, landing_fantasy_driver_results):
+    partition_keys = context.asset_partition_keys_for_input(
+        "landing_fantasy_driver_results"
     )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
+    # Use the generic result parser to parse the driver results
+    dfs = [
+        parse_results(context, data, "driver", partition_key)
+        for data, partition_key in zip(landing_fantasy_driver_results, partition_keys)
+    ]
+    df = pl.concat(dfs, how="diagonal")
     """Received schema:
     [{}] response: list of 20 dictionaries (one per driver) [ {}, {} ]
         abbreviation: str,
@@ -154,76 +118,52 @@ def bronze_fantasy_driver_results(context):
                 dict {'id': 'weekend_PPM', 'results_per_aggregation_list': [], 'results_per_race_list': [X0, X1, ... Xlastrace]}
             [4-15] Not Required - Actual race results, not fantasy-related
     """
-    return
+    return df
 
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["bronze_fantasy_constructor_results"],
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fantasy_bronze_io_manager",
 )
-def bronze_fantasy_current_constructors(context):
+def bronze_fantasy_current_constructors(
+    context, bronze_fantasy_constructor_results, landing_fantasy_current_assets
+):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
     constructor_lookup = pl.scan_csv(
         "src/dagster/utils/map_fantasy/constructor_mapping.csv"
     )
-    unique_constructor_list = (
-        pl.scan_parquet(
-            f"{constants.BRONZE_FANTASY_PATH}/constructor_fantasy_attributes.parquet"
-        )
-        .select("id")
-        .unique()
-    )
+    unique_constructor_list = bronze_fantasy_constructor_results.select("id").unique()
     constructor_lookup = unique_constructor_list.join(
         constructor_lookup, on="id", how="full"
     )
     constructor_lookup = constructor_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active"
     )
-    constructors = format_landing_df("constructors", constructor_lookup)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH,
-        filename="constructors",
-        data=constructors,
-        context=context,
+    landing_fantasy_current_assets_df = pl.LazyFrame(
+        landing_fantasy_current_assets["constructors"]
     )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FANTASY_PATH}/constructors.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    df = format_landing_df(landing_fantasy_current_assets_df, constructor_lookup)
+    return df
 
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["bronze_fantasy_driver_results"],
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fantasy_bronze_io_manager",
 )
-def bronze_fantasy_current_drivers(context):
+def bronze_fantasy_current_drivers(
+    context, bronze_fantasy_driver_results, landing_fantasy_current_assets
+):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
     drivers_lookup = pl.scan_csv("src/dagster/utils/map_fantasy/driver_mapping.csv")
-    unique_driver_list = (
-        pl.scan_parquet(
-            f"{constants.BRONZE_FANTASY_PATH}/driver_fantasy_attributes.parquet"
-        )
-        .select("id")
-        .unique()
-    )
+    unique_driver_list = bronze_fantasy_driver_results.select("id").unique()
     drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="full")
     drivers_lookup = drivers_lookup.select(
         pl.coalesce("id", "id_right").alias("id"), "name", "active"
     )
-    drivers = format_landing_df("drivers", drivers_lookup)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH,
-        filename="drivers",
-        data=drivers,
-        context=context,
+    landing_fantasy_current_assets_df = pl.LazyFrame(
+        landing_fantasy_current_assets["drivers"]
     )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FANTASY_PATH}/drivers.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    df = format_landing_df(landing_fantasy_current_assets_df, drivers_lookup)
+    return df
