@@ -6,7 +6,6 @@ from pyarrow.parquet import read_metadata as parquet_metadata
 
 from dagster import MetadataValue, asset
 from src.dagster.assets import constants
-from src.dagster.assets.constants import YEARS as years
 from src.dagster.utils.fantasy_results_parser import parse_results
 from src.dagster.utils.iomanager import polars_to_parquet
 
@@ -50,33 +49,25 @@ def format_landing_df(asset_type: str, lookup_df: pl.DataFrame) -> pl.DataFrame:
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["landing_fantasy_races"],
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fantasy_bronze_io_manager",
 )
-def bronze_fantasy_rounds(context):
+def bronze_fantasy_rounds(context, landing_fantasy_races):
     """Parse landing zone json to parquet file for fantasy race weekend data"""
-    created = False
-    for year in years:
-        context.log.info(f"Year: {year}")
-        with open(f"{constants.landing_FANTASY_PATH}/{year}/races.json", "r") as f:
-            file = json.load(f)
-        temp_df = pl.LazyFrame(file["races"])
-        temp_df = temp_df.with_columns(pl.lit(year).cast(pl.Int64).alias("season"))
-        if not created:
-            df = temp_df
-            created = True
-        else:
-            df = pl.concat([df, temp_df])
-    polars_to_parquet(
-        filedir=constants.BRONZE_FANTASY_PATH,
-        filename="races",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(f"{constants.BRONZE_FANTASY_PATH}/races.parquet").to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    partition_keys = context.asset_partition_keys_for_input("landing_fantasy_races")
+    # Add the partition key as a literal column in the DataFrame
+    dfs = [
+        pl.LazyFrame(data["races"]).with_columns(
+            pl.lit(partition_key).cast(pl.Int64).alias("season")
+        )
+        for data, partition_key in zip(landing_fantasy_races, partition_keys)
+    ]
+    df = pl.concat(dfs)
+    num_rows = df.select(pl.len()).collect().item()
+    num_cols = df.collect_schema().len()
+    context.add_output_metadata({"Rows": MetadataValue.int(num_rows)})
+    context.add_output_metadata({"Columns": MetadataValue.int(num_cols)})
+    return df
 
 
 @asset(
@@ -168,7 +159,7 @@ def bronze_fantasy_driver_results(context):
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["landing_fantasy_current_assets", "bronze_fantasy_constructor_results"],
+    deps=["bronze_fantasy_constructor_results"],
     compute_kind="polars",
 )
 def bronze_fantasy_current_constructors(context):
@@ -206,7 +197,7 @@ def bronze_fantasy_current_constructors(context):
 
 @asset(
     group_name="bronze_fantasy_files",
-    deps=["landing_fantasy_current_assets", "bronze_fantasy_driver_results"],
+    deps=["bronze_fantasy_driver_results"],
     compute_kind="polars",
 )
 def bronze_fantasy_current_drivers(context):

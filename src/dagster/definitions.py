@@ -18,6 +18,7 @@ from src.dagster.jobs import (
     landing_fantasy_full_job,
     landing_fastf1_full_job,
 )
+from src.dagster.utils.iomanager import GcsJsonIoManager, GCSPolarsParquetIOManager
 
 materialization_condition = AutomationCondition.eager()  # TODO: figure out how to add all parent partition materialized requirement to prevent trigger on eahc partition load.
 
@@ -46,5 +47,30 @@ defs = Definitions(
     jobs=all_jobs,
     resources={
         "dbt": DbtCliResource(project_dir=dbt_project),
+        "gcs_json_fantasy_landing_io_manager": GcsJsonIoManager(
+            project="f1toolbox-core",
+            bucket_name="f1toolbox-landing-bucket",
+            optional_prefix="fantasy",
+        ),
+        "gcs_json_fastf1_landing_io_manager": GcsJsonIoManager(
+            project="f1toolbox-core",
+            bucket_name="f1toolbox-landing-bucket",
+            optional_prefix="fastf1",
+        ),
+        "gcs_parquet_fastf1_landing_io_manager": GCSPolarsParquetIOManager(
+            project="f1toolbox-core",
+            bucket_name="f1toolbox-landing-bucket",
+            optional_prefix="fastf1",
+        ),
+        "gcs_parquet_fantasy_bronze_io_manager": GCSPolarsParquetIOManager(
+            project="f1toolbox-core",
+            bucket_name="f1toolbox-bronze-bucket",
+            optional_prefix="fantasy",
+        ),
+        "gcs_parquet_fastf1_bronze_io_manager": GCSPolarsParquetIOManager(
+            project="f1toolbox-core",
+            bucket_name="f1toolbox-bronze-bucket",
+            optional_prefix="fastf1",
+        ),
     },
 )
