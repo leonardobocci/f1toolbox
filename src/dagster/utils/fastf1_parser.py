@@ -1,14 +1,9 @@
 import glob
-import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 import scipy.signal as ss
-
-from src.dagster.assets import constants
-from src.dagster.utils import iomanager
 
 
 def parse_json_signals(context, signal_directory: str) -> pl.DataFrame:
@@ -338,43 +333,14 @@ def handle_outliers(context, df: pl.LazyFrame, handling="drop") -> pl.LazyFrame:
     return df
 
 
-def enrich_individual_telemetry_parquet_files(context) -> None:
+def enrich_individual_telemetry_parquet_files(context, df) -> None:
     """For each small telemetry file, add accelerations and digital filters, running operations in parallel (because this is an IO bound operation). Write the dfs to a separate directory with parquet files."""
 
-    def extract_from_path(path, target="filenum"):
-        if target == "filenum":
-            match = re.search(r"telemetry/(\d+).parquet", path)
-        elif target == "year":
-            match = re.search(r"fastf1/(\d+)/telemetry", path)
-        return match.group(1)
-
-    def process_file(path):
-        file_number = extract_from_path(str(path), target="filenum")
-        year = extract_from_path(str(path), target="year")
-        df = pl.scan_parquet(path)
-        df = telemetry_coordinate_calculations(context, df)
-        df = enrich_fastf1_telemetry(context, df)
-        df = handle_outliers(context, df)
-        df = apply_digital_filter(context, df)
-        df = handle_outliers(
-            context, df, handling="winsorize"
-        )  # this is to handle any outliers that may have been introduced by the filter
-        iomanager.polars_to_parquet(
-            filedir=f"{constants.landing_FASTF1_PATH}/{year}/rich_telemetry",
-            filename=file_number,
-            data=df,
-            context=context,
-        )
-
-    paths_list = [
-        x for x in Path(constants.landing_FASTF1_PATH).rglob("*/telemetry/*.parquet")
-    ]
-
-    with ThreadPoolExecutor(
-        max_workers=2
-    ) as executor:  # TODO: SMART SETTING FOR MAX WORKERS
-        futures = [executor.submit(process_file, path) for path in paths_list]
-        for future in as_completed(futures):
-            future.result()  # Wait for each future to complete. Raise exceptions.
-
-    return None
+    df = telemetry_coordinate_calculations(context, df)
+    df = enrich_fastf1_telemetry(context, df)
+    df = handle_outliers(context, df)
+    df = apply_digital_filter(context, df)
+    df = handle_outliers(
+        context, df, handling="winsorize"
+    )  # this is to handle any outliers that may have been introduced by the filter
+    return df

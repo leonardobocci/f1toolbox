@@ -1,191 +1,117 @@
-from pyarrow.parquet import read_metadata as parquet_metadata
+import polars as pl
 
-from dagster import MetadataValue, asset
-from src.dagster.assets import constants
+from dagster import AssetIn, asset
 from src.dagster.utils.fastf1_parser import (
-    enrich_individual_telemetry_parquet_files,
-    parse_json_signals,
     parse_lap_timestamps,
-    parse_parquet_signals,
     parse_results_lap_times,
     parse_session_timestamps,
     parse_weather_timestamps,
 )
-from src.dagster.utils.iomanager import parquet_to_polars, polars_to_parquet
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
     compute_kind="polars",
+    ins={"landing_fastf1_events": AssetIn()},
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_events(context):
+def bronze_fastf1_events(context, landing_fastf1_events):
     """Parse landing zone fastf1 event details to parquet file"""
-    df = parse_json_signals(context, "events")
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="events",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(f"{constants.BRONZE_FASTF1_PATH}/events.parquet").to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    dfs = [pl.read_json(data) for data in landing_fastf1_events]
+    df = pl.concat(dfs)
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
+    ins={"landing_fastf1_laps": AssetIn()},
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_laps(context):
+def bronze_fastf1_laps(context, landing_fastf1_laps):
     """Parse landing zone fastf1 lap details to parquet file"""
-    df = parse_parquet_signals(context, "laps")
+    dfs = [
+        df.with_columns(
+            pl.col("Deleted").cast(pl.Utf8),
+        )
+        for df in landing_fastf1_laps
+    ]
+    df = pl.concat(dfs)
     df = parse_lap_timestamps(context, df)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH, filename="laps", data=df, context=context
-    )
-    meta = parquet_metadata(f"{constants.BRONZE_FASTF1_PATH}/laps.parquet").to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
+    ins={"landing_fastf1_session_results": AssetIn()},
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_results(context):
+def bronze_fastf1_session_results(context, landing_fastf1_session_results):
     """Parse landing zone fastf1 results details to parquet file"""
-    df = parse_parquet_signals(context, "results")
+    df = pl.concat(landing_fastf1_session_results)
     df = parse_results_lap_times(context, df)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="results",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(f"{constants.BRONZE_FASTF1_PATH}/results.parquet").to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
     compute_kind="polars",
+    ins={"landing_fastf1_sessions": AssetIn()},
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_sessions(context):
+def bronze_fastf1_sessions(context, landing_fastf1_sessions):
     """Parse landing zone fastf1 sessions details to parquet file"""
-    df = parse_json_signals(context, "sessions")
+    dfs = [pl.read_json(data) for data in landing_fastf1_sessions]
+    df = pl.concat(dfs)
     df = parse_session_timestamps(context, df)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="sessions",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/sessions.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
     compute_kind="polars",
+    # not produced by multiasset so no need for ins
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_telemetry(context):
-    """Parse landing zone fastf1 telemetry details to parquet file"""
-    enrich_individual_telemetry_parquet_files(
-        context
-    )  # saves to a rich_telemetry directory
-    df = parse_parquet_signals(context, "rich_telemetry")
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="telemetry",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/telemetry.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+def bronze_fastf1_telemetry(context, landing_fastf1_telemetry):
+    """Parse landing zone fastf1 results details to parquet file"""
+    df = pl.concat(landing_fastf1_telemetry)
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
+    ins={"landing_fastf1_circuit_corners": AssetIn()},
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_circuit_corners(context):
+def bronze_fastf1_circuit_corners(context, landing_fastf1_circuit_corners):
     """Parse landing zone fastf1 weathers details to parquet file"""
-    df = parse_parquet_signals(context, "circuit_corners")
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="circuit_corners",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/circuit_corners.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    df = pl.concat(landing_fastf1_circuit_corners)
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets", "bronze_fastf1_sessions"],
+    ins={"landing_fastf1_weather": AssetIn()},
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_weathers(context):
+def bronze_fastf1_weathers(context, landing_fastf1_weather, bronze_fastf1_sessions):
     """Parse landing zone fastf1 weathers details to parquet file"""
-    sessions = parquet_to_polars(
-        f"{constants.BRONZE_FASTF1_PATH}/sessions.parquet", context
-    )
-    df = parse_parquet_signals(context, "weathers")
-    df = parse_weather_timestamps(context, df, sessions)
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="weathers",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/weathers.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    df = pl.concat(landing_fastf1_weather)
+    df = parse_weather_timestamps(context, df, bronze_fastf1_sessions)
+    return df
 
 
 @asset(
     group_name="bronze_fastf1_files",
-    deps=["landing_fastf1_assets"],
+    ins={"landing_fastf1_tyre_compounds": AssetIn()},
     compute_kind="polars",
+    io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_tyres(context):
+def bronze_fastf1_tyres(context, landing_fastf1_tyre_compounds):
     """Parse landing zone fastf1 tyre compound details to parquet file"""
-    df = parse_parquet_signals(context, "tyre_compounds")
-    polars_to_parquet(
-        filedir=constants.BRONZE_FASTF1_PATH,
-        filename="tyre_compounds",
-        data=df,
-        context=context,
-    )
-    meta = parquet_metadata(
-        f"{constants.BRONZE_FASTF1_PATH}/tyre_compounds.parquet"
-    ).to_dict()
-    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
-    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_columns"])})
-    return
+    df = pl.concat(landing_fastf1_tyre_compounds)
+    return df
