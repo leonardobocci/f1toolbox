@@ -17,7 +17,7 @@ from src.dagster.utils.fastf1_parser import (
 )
 def bronze_fastf1_events(context, landing_fastf1_events):
     """Parse landing zone fastf1 event details to parquet file"""
-    dfs = [pl.read_json(data) for data in landing_fastf1_events]
+    dfs = [pl.LazyFrame(data) for data in landing_fastf1_events]
     df = pl.concat(dfs)
     return df
 
@@ -30,13 +30,7 @@ def bronze_fastf1_events(context, landing_fastf1_events):
 )
 def bronze_fastf1_laps(context, landing_fastf1_laps):
     """Parse landing zone fastf1 lap details to parquet file"""
-    dfs = [
-        df.with_columns(
-            pl.col("Deleted").cast(pl.Utf8),
-        )
-        for df in landing_fastf1_laps
-    ]
-    df = pl.concat(dfs)
+    df = pl.concat(landing_fastf1_laps)
     df = parse_lap_timestamps(context, df)
     return df
 
@@ -62,7 +56,7 @@ def bronze_fastf1_session_results(context, landing_fastf1_session_results):
 )
 def bronze_fastf1_sessions(context, landing_fastf1_sessions):
     """Parse landing zone fastf1 sessions details to parquet file"""
-    dfs = [pl.read_json(data) for data in landing_fastf1_sessions]
+    dfs = [pl.LazyFrame(data) for data in landing_fastf1_sessions]
     df = pl.concat(dfs)
     df = parse_session_timestamps(context, df)
     return df

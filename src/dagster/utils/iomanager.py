@@ -49,9 +49,11 @@ class GcsJsonIoManager(IOManager):
                 for partition in partitions
             ]
             data = [blob.download_as_string() for blob in blobs]
-            # context.add_input_metadata({"Last modified": MetadataValue.int()})
             return [json.loads(d) for d in data]
         except Exception as e:
+            context.log.info(
+                f"Error loading input: {e}. Trying to load non-partitioned data."
+            )
             if "Attempting to access partitions def for asset" in str(e):
                 blob = bucket.blob(
                     f"{dagster_output_identifier(self.prefix, context.upstream_output)}.json"
@@ -89,7 +91,13 @@ class GCSPolarsParquetIOManager(IOManager):
                     context.log.debug(
                         f"Could not write parquet file using sink_parquet. Trying to collect and write. {e}"
                     )
-                    data.collect(streaming=True).write_parquet(f)
+                    try:
+                        data.collect(streaming=True).write_parquet(f)
+                    except Exception as e:
+                        context.log.debug(
+                            f"Could not write parquet file using collect in streaming mode. Trying to collect and write without streaming. {e}"
+                        )
+                        data.collect().write_parquet(f)
                 num_rows = data.select(pl.len()).collect().item()
                 num_cols = data.collect_schema().len()
             else:
@@ -100,11 +108,30 @@ class GCSPolarsParquetIOManager(IOManager):
             context.add_output_metadata({"Columns": MetadataValue.int(num_cols)})
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
-        with self.fs.open(
-            f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context.upstream_output)}.parquet",
-            "rb",
-        ) as f:
-            return pl.scan_parquet(f)
+        try:
+            partitions = context.asset_partitions_def.get_partition_keys()
+            dfs = [
+                pl.scan_parquet(
+                    self.fs.open(
+                        f"{self.bucket_name}/{"/".join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet",
+                        "rb",
+                    )
+                )
+                for partition in partitions
+            ]
+            return dfs
+        except Exception as e:
+            context.log.info(
+                f"Error loading input: {e}. Trying to load non-partitioned data."
+            )
+            if "Attempting to access partitions def for asset" in str(e):
+                with self.fs.open(
+                    f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context.upstream_output)}.parquet",
+                    "rb",
+                ) as f:
+                    return pl.scan_parquet(f)
+            else:
+                raise e
 
 
 def _save_generic_json(data: dict, filename: str, filedir: str) -> None:
