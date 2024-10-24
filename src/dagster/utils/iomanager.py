@@ -7,20 +7,22 @@ from google.cloud import storage
 from dagster import InputContext, IOManager, MetadataValue, OutputContext
 
 
-def dagster_output_identifier(
+def dagster_asset_path_identifier(
     optional_prefix: str, context: InputContext | OutputContext
 ) -> str:
     "Used to retrieve partition keys for partitioned assets"
+    # help(OutputContext) #.asset_partitions_def .has_partition_key .partition_key
+    # help(InputContext) #.asset_partitions_def .has_partition_key .partition_key
     if context.has_partition_key:
         return "/".join(
-            [optional_prefix, *context.asset_key.path, context.asset_partition_key]
+            [optional_prefix, *context.asset_key.path, context.partition_key]
         )
     else:
         return "/".join([optional_prefix, *context.asset_key.path])
 
 
 class GcsJsonIoManager(IOManager):
-    """Read and write json files to GCS"""
+    """Read and write json files to GCS. Writes a single json file for each partition and returns a list of dicts for each loaded partition, or a dict for non-partitioned assets."""
 
     def __init__(self, project, bucket_name, optional_prefix: str = ""):
         self.project = project
@@ -30,14 +32,16 @@ class GcsJsonIoManager(IOManager):
 
     def handle_output(self, context: OutputContext, obj):
         bucket = self.client.bucket(self.bucket_name)
-        blob = bucket.blob(f"{dagster_output_identifier(self.prefix, context)}.json")
+        blob = bucket.blob(
+            f"{dagster_asset_path_identifier(self.prefix, context)}.json"
+        )
         blob.upload_from_string(json.dumps(obj))
         context.add_output_metadata({"Length": MetadataValue.int(len(obj))})
 
     def load_input(self, context: InputContext):
         """Load each of the json partitions."""
         bucket = self.client.bucket(self.bucket_name)
-        try:
+        if context.has_asset_partitions:
             partitions = context.asset_partitions_def.get_partition_keys()
             blobs = [
                 bucket.blob(
@@ -47,22 +51,17 @@ class GcsJsonIoManager(IOManager):
             ]
             data = [blob.download_as_string() for blob in blobs]
             return [json.loads(d) for d in data]
-        except Exception as e:
-            context.log.info(
-                f"Error loading input: {e}. Trying to load non-partitioned data."
+        else:
+            context.log.debug("Trying to load non-partitioned json asset...")
+            blob = bucket.blob(
+                f"{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.json"
             )
-            if "Attempting to access partitions def for asset" in str(e):
-                blob = bucket.blob(
-                    f"{dagster_output_identifier(self.prefix, context.upstream_output)}.json"
-                )
-                data = blob.download_as_string()
-                return json.loads(data)
-            else:
-                raise e
+            data = blob.download_as_string()
+            return json.loads(data)
 
 
 class GCSPolarsParquetIOManager(IOManager):
-    """Read and write parquet files to GCS"""
+    """Read and write parquet files to GCS. Writes a single parquet file for each partition and returns a list of lazyframes for each loaded partition, or a lazyframe for non-partitioned assets."""
 
     def __init__(self, project: str, bucket_name: str, optional_prefix: str = ""):
         self.project = project
@@ -73,7 +72,7 @@ class GCSPolarsParquetIOManager(IOManager):
 
     def handle_output(self, context: OutputContext, data: pl.LazyFrame | pl.DataFrame):
         with self.fs.open(
-            f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context)}.parquet",
+            f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet",
             "wb",
         ) as f:
             if isinstance(data, pl.DataFrame):
@@ -105,7 +104,7 @@ class GCSPolarsParquetIOManager(IOManager):
             context.add_output_metadata({"Columns": MetadataValue.int(num_cols)})
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
-        try:
+        if context.has_asset_partitions:
             partitions = context.asset_partitions_def.get_partition_keys()
             dfs = [
                 pl.scan_parquet(
@@ -117,15 +116,10 @@ class GCSPolarsParquetIOManager(IOManager):
                 for partition in partitions
             ]
             return dfs
-        except Exception as e:
-            context.log.info(
-                f"Error loading input: {e}. Trying to load non-partitioned data."
-            )
-            if "Attempting to access partitions def for asset" in str(e):
-                with self.fs.open(
-                    f"{self.bucket_name}/{dagster_output_identifier(self.prefix, context.upstream_output)}.parquet",
-                    "rb",
-                ) as f:
-                    return pl.scan_parquet(f)
-            else:
-                raise e
+        else:
+            context.log.info("Trying to load non-partitioned parquet asset...")
+            with self.fs.open(
+                f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.parquet",
+                "rb",
+            ) as f:
+                return pl.scan_parquet(f)
