@@ -13,6 +13,7 @@ io_shortcuts = {
     group_name="landing_fastf1_files",
     partitions_def=fast_f1_season_partitions,
     compute_kind="python",
+    op_tags={"dagster/concurrency_key": "fastf1"},
     outs={
         "landing_fastf1_tyre_compounds": io_shortcuts["landing_parquet"],
         "landing_fastf1_events": io_shortcuts["landing_json"],
