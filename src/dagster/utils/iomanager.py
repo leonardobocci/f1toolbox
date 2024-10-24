@@ -110,7 +110,7 @@ class GCSPolarsParquetIOManager(IOManager):
             dfs = [
                 pl.scan_parquet(
                     self.fs.open(
-                        f"{self.bucket_name}/{"/".join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet",
+                        f"{self.bucket_name}/{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet",
                         "rb",
                     )
                 )
