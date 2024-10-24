@@ -41,7 +41,7 @@ class GcsJsonIoManager(IOManager):
             partitions = context.asset_partitions_def.get_partition_keys()
             blobs = [
                 bucket.blob(
-                    f"{"/".join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
+                    f"{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
                 )
                 for partition in partitions
             ]
