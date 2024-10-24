@@ -34,3 +34,7 @@ repos:
         types: [sql]
         require_serial: true
         additional_dependencies: []
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: 'v2.3'  # or any later Vulture version
+    hooks:
+      - id: vulture

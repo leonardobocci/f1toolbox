@@ -5796,6 +5796,20 @@ docs = ["furo (>=2023.7.26)", "proselint (>=0.13)", "sphinx (>=7.1.2,!=7.3)", "s
 test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7)", "packaging (>=23.1)", "pytest (>=7.4)", "pytest-env (>=0.8.2)", "pytest-freezer (>=0.4.8)", "pytest-mock (>=3.11.1)", "pytest-randomly (>=3.12)", "pytest-timeout (>=2.1)", "setuptools (>=68)", "time-machine (>=2.10)"]
 
 [[package]]
+name = "vulture"
+version = "2.13"
+description = "Find dead code"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "vulture-2.13-py2.py3-none-any.whl", hash = "sha256:34793ba60488e7cccbecdef3a7fe151656372ef94fdac9fe004c52a4000a6d44"},
+    {file = "vulture-2.13.tar.gz", hash = "sha256:78248bf58f5eaffcc2ade306141ead73f437339950f80045dce7f8b078e5a1aa"},
+]
+
+[package.dependencies]
+tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
+
+[[package]]
 name = "watchdog"
 version = "5.0.3"
 description = "Filesystem events monitoring"
@@ -6290,4 +6304,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.12,<3.13"
-content-hash = "0a957e82045515cd590a65fef393c34083f86479514ac8b95956481cbfbd9385"
+content-hash = "d248b4c661e49031e79d9a79bc4cf6a81a425392c8bf60e6826b56c15b3d0283"
