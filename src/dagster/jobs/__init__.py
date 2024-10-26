@@ -17,7 +17,14 @@ landing_fastf1_full_job = define_asset_job(
         "execution": {
             "config": {
                 "multiprocess": {
-                    "max_concurrent": 1,  # prevents fastf1 errors from concurrent runs
+                    "max_concurrent": 1,
+                    "tag_concurrency_limits": [
+                        {
+                            "key": "f1_api",
+                            "value": "fastf1",
+                            "limit": 1,
+                        }
+                    ],
                 },
             }
         }
