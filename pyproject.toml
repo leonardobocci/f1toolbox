@@ -12,6 +12,7 @@ dagster = ">=1.7.10, <1.9"
 dagster-webserver = ">=1.7.10" #pinned by dagster dependencies
 dagster-dbt = ">=0.23.10" #pinned by dagster dependencies
 dagster-postgres = ">=0.23.10" #pinned by dagster dependencies
+dagster-k8s = ">=0.23.10" #pinned by dagster dependencies
 polars = {extras = ["numpy"], version = ">=1.0.0, <2"}
 flatdict = "4.0.1" #small package, don't want to be affected by versioning
 pyarrow = ">=16.1.0, <17"
