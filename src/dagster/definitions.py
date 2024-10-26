@@ -14,9 +14,9 @@ from src.dagster.assets import (
 )
 from src.dagster.dbt_project import dbt_project
 from src.dagster.jobs import (
-    bronze_dbt_views_job,
-    landing_fantasy_full_job,
-    landing_fastf1_full_job,
+    dbt_refresh,
+    refresh_fantasy,
+    refresh_fastf1,
 )
 from src.dagster.utils.iomanager import GcsJsonIoManager, GCSPolarsParquetIOManager
 
@@ -34,7 +34,7 @@ bronze_fastf1_assets = load_assets_from_modules(
     [fastf1_bronze], automation_condition=materialization_condition
 )
 
-all_jobs = [landing_fastf1_full_job, landing_fantasy_full_job, bronze_dbt_views_job]
+all_jobs = [refresh_fastf1, refresh_fantasy, dbt_refresh]
 
 defs = Definitions(
     assets=[
