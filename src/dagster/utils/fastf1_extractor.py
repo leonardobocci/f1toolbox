@@ -26,18 +26,14 @@ def retry(exception_to_check, tries=3, delay=1):
                 try:
                     return func(*args, **kwargs)
                 except exception_to_check as e:
-                    if context and hasattr(context, "log"):
-                        context.log.warning(f"Retrying exception: {str(e)}")
-                        context.log.info(
-                            f"Retrying in {delay} seconds... ({_tries-1} tries left)"
-                        )
-                    else:
-                        print(f"Retrying exception: {str(e)}")
-                        print(
-                            f"{str(e)}: Retrying in {delay} seconds... ({_tries-1} tries left)"
-                        )
+                    context.log.warning(f"Retrying exception: {str(e)}")
+                    context.log.info(
+                        f"Retrying in {delay} seconds... ({_tries-1} tries left)"
+                    )
                     time.sleep(delay)
                     _tries -= 1
+                    if exception_to_check == fastf1.core.DataNotLoadedError:
+                        context.log.info("Clearing fastf1 cache")
             # Last attempt (no more retries)
             return func(*args, **kwargs)
 
