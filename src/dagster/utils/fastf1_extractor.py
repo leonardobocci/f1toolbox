@@ -34,6 +34,7 @@ def retry(exception_to_check, tries=3, delay=1):
                     _tries -= 1
                     if exception_to_check == fastf1.core.DataNotLoadedError:
                         context.log.info("Clearing fastf1 cache")
+                        fastf1.Cache.clear_cache()
             # Last attempt (no more retries)
             return func(*args, **kwargs)
 
