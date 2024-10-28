@@ -68,9 +68,9 @@ def bronze_fastf1_sessions(context, landing_fastf1_sessions):
     # not produced by multiasset so no need for ins
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_telemetry(context, landing_fastf1_telemetry):
+def bronze_fastf1_telemetry(context, landing_fastf1_rich_telemetry):
     """Parse landing zone fastf1 results details to parquet file"""
-    df = pl.concat(landing_fastf1_telemetry)
+    df = pl.concat(landing_fastf1_rich_telemetry)
     return df
 
 
@@ -101,7 +101,7 @@ def bronze_fastf1_weathers(context, landing_fastf1_weather, bronze_fastf1_sessio
 
 @asset(
     group_name="bronze_fastf1_files",
-    ins={"landing_fastf1_tyre_compounds": AssetIn()},
+    # not produced by multiasset so no need for ins
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )

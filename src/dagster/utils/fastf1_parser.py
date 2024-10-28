@@ -263,20 +263,14 @@ def apply_digital_filter(
     return df.with_columns(
         longitudinal_acceleration=pl.Series(
             ss.savgol_filter(
-                np.ravel(
-                    df.select("longitudinal_acceleration")
-                    .collect(streaming=True)
-                    .to_numpy()
-                ),
+                np.ravel(df.select("longitudinal_acceleration").collect().to_numpy()),
                 window_length=window_len,
                 polyorder=polyorder,
             )
         ),
         lateral_acceleration=pl.Series(
             ss.savgol_filter(
-                np.ravel(
-                    df.select("lateral_acceleration").collect(streaming=True).to_numpy()
-                ),
+                np.ravel(df.select("lateral_acceleration").collect().to_numpy()),
                 window_length=window_len,
                 polyorder=polyorder,
             )

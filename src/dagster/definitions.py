@@ -17,10 +17,11 @@ from src.dagster.jobs import (
     dbt_refresh,
     refresh_fantasy,
     refresh_fastf1,
+    refresh_season_fastf1,
 )
 from src.dagster.utils.iomanager import GcsJsonIoManager, GCSPolarsParquetIOManager
 
-materialization_condition = AutomationCondition.eager()  # TODO: figure out how to add all parent partition materialized requirement to prevent trigger on eahc partition load.
+materialization_condition = AutomationCondition.eager()
 
 landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
@@ -34,7 +35,7 @@ bronze_fastf1_assets = load_assets_from_modules(
     [fastf1_bronze], automation_condition=materialization_condition
 )
 
-all_jobs = [refresh_fastf1, refresh_fantasy, dbt_refresh]
+all_jobs = [refresh_season_fastf1, refresh_fastf1, refresh_fantasy, dbt_refresh]
 
 defs = Definitions(
     assets=[

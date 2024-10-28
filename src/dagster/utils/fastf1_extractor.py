@@ -43,10 +43,34 @@ def retry(exception_to_check, tries=3, delay=1):
     return decorator_retry
 
 
+def validate_event_num(context) -> tuple[int, int] | tuple[None, None]:
+    partition_key = context.partition_key  # event|year of str subclass dagster._core.definitions.multi_dimensional_partitions.MultiPartitionKey
+    year = int(
+        [
+            item
+            for item in partition_key.dimension_keys
+            if item.dimension_name == "year"
+        ][0].partition_key
+    )
+    event_num = int(
+        [
+            item
+            for item in partition_key.dimension_keys
+            if item.dimension_name == "event"
+        ][0].partition_key
+    )
+    # validate if the event exists for the year
+    if event_num > get_num_events(year):
+        context.log.warning(
+            f"Event {event_num} does not exist or has not occured for year {year}. Skipping..."
+        )
+        return None, None
+    context.log.debug(f"Event {event_num} exists for year {year}.")
+    return year, event_num
+
+
 @retry(exception_to_check=fastf1.core.DataNotLoadedError, tries=5, delay=10)
-def extract_event(
-    context, year: int, event_num: int, meta
-) -> tuple[dict, pl.DataFrame]:
+def extract_event(context, year: int, event_num: int) -> tuple[dict, pl.DataFrame]:
     """Extract event info from a session object and save to landing zone"""
 
     def extract_circuit_info(year: int, circuit_key: int) -> tuple[pl.DataFrame, int]:
@@ -75,7 +99,6 @@ def extract_event(
     circuit_key = flat_event["Circuit_Key"]
     corners, track_map_rotation_degrees = extract_circuit_info(year, circuit_key)
     flat_event["track_map_rotation_degrees"] = track_map_rotation_degrees
-    meta.extraction_metadata["saved_events"].append(flat_event["id"])
 
     corners = corners.with_columns(pl.lit(year).alias("year"))
     corners = corners.with_columns(pl.lit(circuit_key).alias("circuit_key"))
@@ -88,7 +111,6 @@ def extract_event(
         .alias("distance_from_last_corner")
     )
     corners = corners.drop(["x_prev", "y_prev"])
-    meta.extraction_metadata["saved_circuit_corners"].append(f"{year}_{circuit_key}")
     """
     Session Object
     ~ if useful
@@ -213,7 +235,7 @@ def _extract_session_telemetry(
     return session_id, telemetry
 
 
-def extract_tyre_compounds(year: int, meta) -> pl.DataFrame:
+def extract_tyre_compounds(year: int) -> pl.DataFrame:
     session = fastf1.get_session(year=year, gp=1, identifier=5)
     tyre_dict = f1plot.get_compound_mapping(session)
     tyre_compounds = (
@@ -222,7 +244,6 @@ def extract_tyre_compounds(year: int, meta) -> pl.DataFrame:
         .rename({"column_0": "color"})
     )
     tyre_compounds = tyre_compounds.with_columns(pl.lit(year).alias("season"))
-    meta.extraction_metadata["saved_tyres"].append({year: list(tyre_dict.keys())})
     return tyre_compounds
 
 
@@ -252,6 +273,7 @@ def extract_fastf1_signals(
             f"missing_weather_{year}_{event_num}_{session_num}"
         )
         context.log.error(f"{year}_{event_num}_{session_num} weather not available")
+        saved_weather = pl.LazyFrame()
     else:
         meta.extraction_metadata["saved_weathers"].append(saved_weather_session)
         context.log.info(f"{year}_{event_num}_{session_num} weather found")
@@ -266,6 +288,7 @@ def extract_fastf1_signals(
             f"missing_telemetry_{year}_{event_num}_{session_num}"
         )
         context.log.error(f"{year}_{event_num}_{session_num} telemetry not available")
+        saved_telemetry = pl.LazyFrame()
     else:
         meta.extraction_metadata["saved_telemetry"].append(saved_telemetry_session)
         context.log.info(f"{year}_{event_num}_{session_num} telemetry found")
@@ -278,10 +301,9 @@ def extract_fastf1_signals(
     )
 
 
-def get_num_events(year: int, meta) -> int:
+def get_num_events(year: int) -> int:
     event_calendar = fastf1.get_event_schedule(year)
     num_events = len(event_calendar.loc[event_calendar["EventFormat"] != "testing"])
-    meta.extraction_metadata["total_events"] = num_events
     if year == datetime.today().year:
         remaining_num_events = len(
             fastf1.get_events_remaining(dt=datetime.today(), include_testing=False)
@@ -293,15 +315,11 @@ def get_num_events(year: int, meta) -> int:
 class ExtractionMetadata:
     def __init__(self) -> None:
         self.extraction_metadata = {
-            "saved_events": [],
-            "total_events": 0,
             "saved_sessions": [],
             "saved_weathers": [],
             "saved_laps": [],
             "saved_telemetry": [],
             "saved_results": [],
-            "saved_circuit_corners": [],
-            "saved_tyres": [],
             "session_level_errors": [],
         }
 
@@ -323,13 +341,7 @@ def extract_fastf1(
     Extract all race events in a year and save to landing zone.
     """
     meta = ExtractionMetadata()
-    num_events = get_num_events(year, meta)
     # get tyre compounds for this season
-    tyre_compounds = extract_tyre_compounds(year, meta)
-    context.log.info(f"Extracting {num_events} events for {year}")
-
-    event_info = []
-    circuit_corners = pl.LazyFrame()
     sessions = []
     session_results = pl.LazyFrame()
     weather = pl.LazyFrame()
@@ -337,36 +349,30 @@ def extract_fastf1(
     telemetry = pl.LazyFrame()
 
     def create_or_concat_df(df, extension_df):
-        if df.collect_schema():
-            return pl.concat([df, extension_df])
-        else:
+        if df.collect_schema().len() == 0:
             return extension_df
+        if extension_df.collect_schema().len() == 0:
+            return df
+        return pl.concat([df, extension_df])
 
-    while event_num <= num_events:
-        # Collect general event information
-        _event_info, _circuit_corners = extract_event(context, year, event_num, meta)
-        _event_id = _event_info["id"]
-        context.log.info(f"{year}_{event_num} event details found")
-        for session_num in constants.SESSIONS:
-            _sessions, _session_results, _weather, _laps, _telemetry = (
-                extract_fastf1_signals(
-                    context, year, session_num, event_num, _event_id, meta
-                )
+    # Collect general event information
+    event_info, _ = extract_event(context, year, event_num)
+    event_id = event_info["id"]
+    context.log.info(f"{year}_{event_num} event details found")
+    for session_num in constants.SESSIONS:
+        _sessions, _session_results, _weather, _laps, _telemetry = (
+            extract_fastf1_signals(
+                context, year, session_num, event_num, event_id, meta
             )
+        )
         context.log.info(f"{year}_{event_num} event signals found")
-        event_info.append(_event_info)
-        circuit_corners = create_or_concat_df(circuit_corners, _circuit_corners)
         sessions.append(_sessions)
         session_results = create_or_concat_df(session_results, _session_results)
         weather = create_or_concat_df(weather, _weather)
         laps = create_or_concat_df(laps, _laps)
         telemetry = create_or_concat_df(telemetry, _telemetry)
-        event_num += 1
     return (
         meta.extraction_metadata,
-        tyre_compounds,
-        event_info,
-        circuit_corners,
         sessions,
         session_results,
         weather,

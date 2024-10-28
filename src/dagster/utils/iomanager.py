@@ -31,26 +31,39 @@ class GcsJsonIoManager(IOManager):
         self.client = storage.Client(project=project)
 
     def handle_output(self, context: OutputContext, obj):
-        bucket = self.client.bucket(self.bucket_name)
-        blob = bucket.blob(
-            f"{dagster_asset_path_identifier(self.prefix, context)}.json"
-        )
-        blob.upload_from_string(json.dumps(obj))
+        if obj is None:
+            context.log.warning("Iomanager received no data to write. Skipping...")
+            obj = []
+        else:
+            bucket = self.client.bucket(self.bucket_name)
+            blob = bucket.blob(
+                f"{dagster_asset_path_identifier(self.prefix, context)}.json"
+            )
+            blob.upload_from_string(json.dumps(obj))
         context.add_output_metadata({"Length": MetadataValue.int(len(obj))})
 
     def load_input(self, context: InputContext):
         """Load each of the json partitions."""
         bucket = self.client.bucket(self.bucket_name)
         if context.has_asset_partitions:
-            partitions = context.asset_partitions_def.get_partition_keys()
-            blobs = [
-                bucket.blob(
-                    f"{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
+            if context.has_partition_key:
+                # load a single partition
+                blob = bucket.blob(
+                    f"{dagster_asset_path_identifier(self.prefix, context)}.json"
                 )
-                for partition in partitions
-            ]
-            data = [blob.download_as_string() for blob in blobs]
-            return [json.loads(d) for d in data]
+                data = blob.download_as_string()
+                return json.loads(data)
+            else:
+                # load all partitions
+                partitions = context.asset_partitions_def.get_partition_keys()
+                blobs = [
+                    bucket.blob(
+                        f"{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
+                    )
+                    for partition in partitions
+                ]
+                data = [blob.download_as_string() for blob in blobs]
+                return [json.loads(d) for d in data]
         else:
             context.log.debug("Trying to load non-partitioned json asset...")
             blob = bucket.blob(
@@ -96,6 +109,10 @@ class GCSPolarsParquetIOManager(IOManager):
                         data.collect().write_parquet(f)
                 num_rows = data.select(pl.len()).collect().item()
                 num_cols = data.collect_schema().len()
+            elif data is None:
+                context.log.warning("Iomanager received no data to write. Skipping...")
+                num_cols = 0
+                num_rows = 0
             else:
                 raise NotImplementedError(
                     f"Data type not supported. Received: {type(data)}. Supported types: pl.LazyFrame, pl.DataFrame"
@@ -105,17 +122,26 @@ class GCSPolarsParquetIOManager(IOManager):
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
         if context.has_asset_partitions:
-            partitions = context.asset_partitions_def.get_partition_keys()
-            dfs = [
-                pl.scan_parquet(
-                    self.fs.open(
-                        f"{self.bucket_name}/{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet",
-                        "rb",
+            if context.has_partition_key:
+                # load a single partition
+                with self.fs.open(
+                    f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet",
+                    "rb",
+                ) as f:
+                    return pl.scan_parquet(f)
+            else:
+                # load all partitions
+                partitions = context.asset_partitions_def.get_partition_keys()
+                dfs = [
+                    pl.scan_parquet(
+                        self.fs.open(
+                            f"{self.bucket_name}/{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet",
+                            "rb",
+                        )
                     )
-                )
-                for partition in partitions
-            ]
-            return dfs
+                    for partition in partitions
+                ]
+                return dfs
         else:
             context.log.info("Trying to load non-partitioned parquet asset...")
             with self.fs.open(

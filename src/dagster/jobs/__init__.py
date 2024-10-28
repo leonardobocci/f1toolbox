@@ -1,6 +1,11 @@
 from dagster import AssetSelection, define_asset_job
-from src.dagster.partitions import fantasy_partitions, fast_f1_season_partitions
+from src.dagster.partitions import (
+    fantasy_partitions,
+    fast_f1_partitions,
+    fast_f1_season_partitions,
+)
 
+fastf1_season_assets = AssetSelection.groups("landing_fastf1_season_files")
 fastf1_assets = AssetSelection.groups("landing_fastf1_files", "bronze_fastf1_files")
 fantasy_assets = AssetSelection.groups("landing_fantasy_files", "bronze_fantasy_files")
 dbt_assets = AssetSelection.groups(
@@ -13,9 +18,15 @@ refresh_fantasy = define_asset_job(
     selection=fantasy_assets,
 )
 
+refresh_season_fastf1 = define_asset_job(
+    name="refresh_season_fastf1",
+    partitions_def=fast_f1_season_partitions,
+    selection=fastf1_season_assets,
+)
+
 refresh_fastf1 = define_asset_job(
     name="refresh_fastf1",
-    partitions_def=fast_f1_season_partitions,
+    partitions_def=fast_f1_partitions,
     selection=fastf1_assets,
 )
 
