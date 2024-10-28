@@ -32,14 +32,15 @@ class GcsJsonIoManager(IOManager):
 
     def handle_output(self, context: OutputContext, obj):
         if obj is None:
-            context.log.warning("Iomanager received no data to write. Skipping...")
-            obj = []
-        else:
-            bucket = self.client.bucket(self.bucket_name)
-            blob = bucket.blob(
-                f"{dagster_asset_path_identifier(self.prefix, context)}.json"
+            context.log.warning(
+                "Iomanager received no data to write. Writing empty file to prevent downstream asset failures..."
             )
-            blob.upload_from_string(json.dumps(obj))
+            obj = []
+        bucket = self.client.bucket(self.bucket_name)
+        blob = bucket.blob(
+            f"{dagster_asset_path_identifier(self.prefix, context)}.json"
+        )
+        blob.upload_from_string(json.dumps(obj))
         context.add_output_metadata({"Length": MetadataValue.int(len(obj))})
 
     def load_input(self, context: InputContext):
@@ -110,7 +111,10 @@ class GCSPolarsParquetIOManager(IOManager):
                 num_rows = data.select(pl.len()).collect().item()
                 num_cols = data.collect_schema().len()
             elif data is None:
-                context.log.warning("Iomanager received no data to write. Skipping...")
+                context.log.warning(
+                    "Iomanager received no data to write. Writing empty file to prevent downstream asset failures..."
+                )
+                pl.DataFrame().write_parquet(f)
                 num_cols = 0
                 num_rows = 0
             else:
