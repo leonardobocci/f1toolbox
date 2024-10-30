@@ -11,9 +11,7 @@ def dagster_asset_path_identifier(
     optional_prefix: str, context: InputContext | OutputContext
 ) -> str:
     "Used to retrieve partition keys for partitioned assets"
-    # help(OutputContext) #.asset_partitions_def .has_partition_key .partition_key
-    # help(InputContext) #.asset_partitions_def .has_partition_key .partition_key
-    if context.has_partition_key:
+    if context.has_asset_partitions and context.has_partition_key:
         return "/".join(
             [optional_prefix, *context.asset_key.path, context.partition_key]
         )
@@ -47,7 +45,11 @@ class GcsJsonIoManager(IOManager):
         """Load each of the json partitions."""
         bucket = self.client.bucket(self.bucket_name)
         if context.has_asset_partitions:
+            context.log.debug("Found partitions in inputcontext")
             if context.has_partition_key:
+                context.log.debug(
+                    "Current run has partition key. Loading single partition."
+                )
                 # load a single partition
                 blob = bucket.blob(
                     f"{dagster_asset_path_identifier(self.prefix, context)}.json"
@@ -55,6 +57,9 @@ class GcsJsonIoManager(IOManager):
                 data = blob.download_as_string()
                 return json.loads(data)
             else:
+                context.log.debug(
+                    "Current run is not partitioned. Loading all partitions."
+                )
                 # load all partitions
                 partitions = context.asset_partitions_def.get_partition_keys()
                 blobs = [
@@ -66,7 +71,9 @@ class GcsJsonIoManager(IOManager):
                 data = [blob.download_as_string() for blob in blobs]
                 return [json.loads(d) for d in data]
         else:
-            context.log.debug("Trying to load non-partitioned json asset...")
+            context.log.debug(
+                "Did not find inputcontext partitions. Trying to load non-partitioned json asset..."
+            )
             blob = bucket.blob(
                 f"{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.json"
             )
@@ -126,7 +133,11 @@ class GCSPolarsParquetIOManager(IOManager):
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
         if context.has_asset_partitions:
+            context.log.info("Found partitions in inputcontext")
             if context.has_partition_key:
+                context.log.info(
+                    "Current run has partition key. Loading single partition."
+                )
                 # load a single partition
                 with self.fs.open(
                     f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet",
@@ -134,6 +145,9 @@ class GCSPolarsParquetIOManager(IOManager):
                 ) as f:
                     return pl.scan_parquet(f)
             else:
+                context.log.info(
+                    "Current run is not partitioned. Loading all partitions."
+                )
                 # load all partitions
                 partitions = context.asset_partitions_def.get_partition_keys()
                 dfs = [
@@ -147,7 +161,9 @@ class GCSPolarsParquetIOManager(IOManager):
                 ]
                 return dfs
         else:
-            context.log.info("Trying to load non-partitioned parquet asset...")
+            context.log.info(
+                "Did not find inputcontext partitions. Trying to load non-partitioned parquet asset..."
+            )
             with self.fs.open(
                 f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.parquet",
                 "rb",

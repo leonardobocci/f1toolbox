@@ -15,9 +15,11 @@ from src.dagster.assets import (
 from src.dagster.dbt_project import dbt_project
 from src.dagster.jobs import (
     dbt_refresh,
-    refresh_fantasy,
-    refresh_fastf1,
-    refresh_season_fastf1,
+    refresh_fantasy_bronze,
+    refresh_fantasy_landing,
+    refresh_fastf1_bronze,
+    refresh_fastf1_landing,
+    refresh_season_fastf1_landing,
 )
 from src.dagster.utils.iomanager import GcsJsonIoManager, GCSPolarsParquetIOManager
 
@@ -35,7 +37,14 @@ bronze_fastf1_assets = load_assets_from_modules(
     [fastf1_bronze], automation_condition=materialization_condition
 )
 
-all_jobs = [refresh_season_fastf1, refresh_fastf1, refresh_fantasy, dbt_refresh]
+all_jobs = [
+    refresh_fantasy_landing,
+    refresh_fantasy_bronze,
+    refresh_season_fastf1_landing,
+    refresh_fastf1_landing,
+    refresh_fastf1_bronze,
+    dbt_refresh,
+]
 
 defs = Definitions(
     assets=[
