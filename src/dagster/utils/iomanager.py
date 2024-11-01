@@ -69,7 +69,10 @@ class GcsJsonIoManager(IOManager):
                     for partition in partitions
                 ]
                 data = [blob.download_as_string() for blob in blobs]
-                return [json.loads(d) for d in data]
+                loaded_dicts = [json.loads(d) for d in data]
+                return [
+                    item for item in loaded_dicts if item
+                ]  # filter out empty partitions
         else:
             context.log.debug(
                 "Did not find inputcontext partitions. Trying to load non-partitioned json asset..."
@@ -133,9 +136,9 @@ class GCSPolarsParquetIOManager(IOManager):
 
     def load_input(self, context: InputContext) -> pl.LazyFrame:
         if context.has_asset_partitions:
-            context.log.info("Found partitions in inputcontext")
+            context.log.debug("Found partitions in inputcontext")
             if context.has_partition_key:
-                context.log.info(
+                context.log.debug(
                     "Current run has partition key. Loading single partition."
                 )
                 # load a single partition
@@ -145,7 +148,7 @@ class GCSPolarsParquetIOManager(IOManager):
                 ) as f:
                     return pl.scan_parquet(f)
             else:
-                context.log.info(
+                context.log.debug(
                     "Current run is not partitioned. Loading all partitions."
                 )
                 # load all partitions
@@ -159,9 +162,11 @@ class GCSPolarsParquetIOManager(IOManager):
                     )
                     for partition in partitions
                 ]
-                return dfs
+                return [
+                    df for df in dfs if df.collect_schema()
+                ]  # filter out empty partitions
         else:
-            context.log.info(
+            context.log.debug(
                 "Did not find inputcontext partitions. Trying to load non-partitioned parquet asset..."
             )
             with self.fs.open(

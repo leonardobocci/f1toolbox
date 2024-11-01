@@ -15,7 +15,7 @@ from src.dagster.utils.fastf1_parser import (
     ins={"landing_fastf1_events": AssetIn()},
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_events(context, landing_fastf1_events):
+def bronze_fastf1_events(context, landing_fastf1_events: list[dict]) -> pl.LazyFrame:
     """Parse landing zone fastf1 event details to parquet file"""
     dfs = [pl.LazyFrame(data) for data in landing_fastf1_events]
     df = pl.concat(dfs)
@@ -28,7 +28,9 @@ def bronze_fastf1_events(context, landing_fastf1_events):
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_laps(context, landing_fastf1_laps):
+def bronze_fastf1_laps(
+    context, landing_fastf1_laps: list[pl.LazyFrame]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 lap details to parquet file"""
     df = pl.concat(landing_fastf1_laps)
     df = parse_lap_timestamps(context, df)
@@ -41,7 +43,9 @@ def bronze_fastf1_laps(context, landing_fastf1_laps):
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_session_results(context, landing_fastf1_session_results):
+def bronze_fastf1_session_results(
+    context, landing_fastf1_session_results: list[pl.LazyFrame]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 results details to parquet file"""
     df = pl.concat(landing_fastf1_session_results)
     df = parse_results_lap_times(context, df)
@@ -54,7 +58,9 @@ def bronze_fastf1_session_results(context, landing_fastf1_session_results):
     ins={"landing_fastf1_sessions": AssetIn()},
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_sessions(context, landing_fastf1_sessions):
+def bronze_fastf1_sessions(
+    context, landing_fastf1_sessions: list[list[dict]]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 sessions details to parquet file"""
     dfs = [pl.LazyFrame(data) for data in landing_fastf1_sessions]
     df = pl.concat(dfs)
@@ -68,7 +74,9 @@ def bronze_fastf1_sessions(context, landing_fastf1_sessions):
     # not produced by multiasset so no need for ins
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_telemetry(context, landing_fastf1_rich_telemetry):
+def bronze_fastf1_telemetry(
+    context, landing_fastf1_rich_telemetry: list[pl.LazyFrame]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 results details to parquet file"""
     df = pl.concat(landing_fastf1_rich_telemetry)
     return df
@@ -80,7 +88,9 @@ def bronze_fastf1_telemetry(context, landing_fastf1_rich_telemetry):
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_circuit_corners(context, landing_fastf1_circuit_corners):
+def bronze_fastf1_circuit_corners(
+    context, landing_fastf1_circuit_corners: list[pl.LazyFrame]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 weathers details to parquet file"""
     df = pl.concat(landing_fastf1_circuit_corners)
     return df
@@ -92,7 +102,11 @@ def bronze_fastf1_circuit_corners(context, landing_fastf1_circuit_corners):
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_weathers(context, landing_fastf1_weather, bronze_fastf1_sessions):
+def bronze_fastf1_weathers(
+    context,
+    landing_fastf1_weather: list[pl.LazyFrame],
+    bronze_fastf1_sessions: pl.LazyFrame,
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 weathers details to parquet file"""
     df = pl.concat(landing_fastf1_weather)
     df = parse_weather_timestamps(context, df, bronze_fastf1_sessions)
@@ -105,7 +119,9 @@ def bronze_fastf1_weathers(context, landing_fastf1_weather, bronze_fastf1_sessio
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_tyres(context, landing_fastf1_tyre_compounds):
+def bronze_fastf1_tyres(
+    context, landing_fastf1_tyre_compounds: list[pl.LazyFrame]
+) -> pl.LazyFrame:
     """Parse landing zone fastf1 tyre compound details to parquet file"""
     df = pl.concat(landing_fastf1_tyre_compounds)
     return df
