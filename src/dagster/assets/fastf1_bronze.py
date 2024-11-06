@@ -28,11 +28,9 @@ def bronze_fastf1_events(context, landing_fastf1_events: list[dict]) -> pl.LazyF
     compute_kind="polars",
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
-def bronze_fastf1_laps(
-    context, landing_fastf1_laps: list[pl.LazyFrame]
-) -> pl.LazyFrame:
+def bronze_fastf1_laps(context, landing_fastf1_laps: list[str]) -> pl.LazyFrame:
     """Parse landing zone fastf1 lap details to parquet file"""
-    df = pl.concat(landing_fastf1_laps)
+    df = pl.scan_parquet(landing_fastf1_laps)
     df = parse_lap_timestamps(context, df)
     return df
 
@@ -44,10 +42,10 @@ def bronze_fastf1_laps(
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
 def bronze_fastf1_session_results(
-    context, landing_fastf1_session_results: list[pl.LazyFrame]
+    context, landing_fastf1_session_results: list[str]
 ) -> pl.LazyFrame:
     """Parse landing zone fastf1 results details to parquet file"""
-    df = pl.concat(landing_fastf1_session_results)
+    df = pl.scan_parquet(landing_fastf1_session_results)
     df = parse_results_lap_times(context, df)
     return df
 
@@ -75,10 +73,10 @@ def bronze_fastf1_sessions(
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
 def bronze_fastf1_telemetry(
-    context, landing_fastf1_rich_telemetry: list[pl.LazyFrame]
+    context, landing_fastf1_rich_telemetry: list[str]
 ) -> pl.LazyFrame:
     """Parse landing zone fastf1 results details to parquet file"""
-    df = pl.concat(landing_fastf1_rich_telemetry)
+    df = pl.scan_parquet(landing_fastf1_rich_telemetry)
     return df
 
 
@@ -89,10 +87,10 @@ def bronze_fastf1_telemetry(
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
 def bronze_fastf1_circuit_corners(
-    context, landing_fastf1_circuit_corners: list[pl.LazyFrame]
+    context, landing_fastf1_circuit_corners: list[str]
 ) -> pl.LazyFrame:
     """Parse landing zone fastf1 weathers details to parquet file"""
-    df = pl.concat(landing_fastf1_circuit_corners)
+    df = pl.scan_parquet(landing_fastf1_circuit_corners)
     return df
 
 
@@ -104,12 +102,12 @@ def bronze_fastf1_circuit_corners(
 )
 def bronze_fastf1_weathers(
     context,
-    landing_fastf1_weather: list[pl.LazyFrame],
-    bronze_fastf1_sessions: pl.LazyFrame,
+    landing_fastf1_weather: list[str],
+    bronze_fastf1_sessions: str,
 ) -> pl.LazyFrame:
     """Parse landing zone fastf1 weathers details to parquet file"""
-    df = pl.concat(landing_fastf1_weather)
-    df = parse_weather_timestamps(context, df, bronze_fastf1_sessions)
+    df = pl.scan_parquet(landing_fastf1_weather)
+    df = parse_weather_timestamps(context, df, pl.scan_parquet(bronze_fastf1_sessions))
     return df
 
 
@@ -120,8 +118,8 @@ def bronze_fastf1_weathers(
     io_manager_key="gcs_parquet_fastf1_bronze_io_manager",
 )
 def bronze_fastf1_tyres(
-    context, landing_fastf1_tyre_compounds: list[pl.LazyFrame]
+    context, landing_fastf1_tyre_compounds: list[str]
 ) -> pl.LazyFrame:
     """Parse landing zone fastf1 tyre compound details to parquet file"""
-    df = pl.concat(landing_fastf1_tyre_compounds)
+    df = pl.scan_parquet(landing_fastf1_tyre_compounds)
     return df

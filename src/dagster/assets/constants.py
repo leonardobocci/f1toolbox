@@ -10,3 +10,6 @@ EVENTS = {
     2023: list(range(1, 23)),  # 22 events
     2024: list(range(1, 25)),  # 24 events
 }
+
+# [GCP]
+PROJECT = "f1toolbox-core"

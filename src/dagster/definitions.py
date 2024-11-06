@@ -12,6 +12,7 @@ from src.dagster.assets import (
     fastf1_bronze,
     fastf1_landing,
 )
+from src.dagster.assets.constants import PROJECT
 from src.dagster.dbt_project import dbt_project
 from src.dagster.jobs import (
     dbt_refresh,
@@ -58,27 +59,27 @@ defs = Definitions(
     resources={
         "dbt": DbtCliResource(project_dir=dbt_project),
         "gcs_json_fantasy_landing_io_manager": GcsJsonIoManager(
-            project="f1toolbox-core",
+            project=PROJECT,
             bucket_name="f1toolbox-landing-bucket",
             optional_prefix="fantasy",
         ),
         "gcs_json_fastf1_landing_io_manager": GcsJsonIoManager(
-            project="f1toolbox-core",
+            project=PROJECT,
             bucket_name="f1toolbox-landing-bucket",
             optional_prefix="fastf1",
         ),
         "gcs_parquet_fastf1_landing_io_manager": GCSPolarsParquetIOManager(
-            project="f1toolbox-core",
+            project=PROJECT,
             bucket_name="f1toolbox-landing-bucket",
             optional_prefix="fastf1",
         ),
         "gcs_parquet_fantasy_bronze_io_manager": GCSPolarsParquetIOManager(
-            project="f1toolbox-core",
+            project=PROJECT,
             bucket_name="f1toolbox-bronze-bucket",
             optional_prefix="fantasy",
         ),
         "gcs_parquet_fastf1_bronze_io_manager": GCSPolarsParquetIOManager(
-            project="f1toolbox-core",
+            project=PROJECT,
             bucket_name="f1toolbox-bronze-bucket",
             optional_prefix="fastf1",
         ),
