@@ -37,7 +37,7 @@ def get_partitioned_input_list(context: InputContext) -> list[str]:
         if isinstance(partition, MultiPartitionKey):
             partition_list.append("_".join(partition.keys_by_dimension.values()))
         else:
-            partition_list.append(context.partition_key)
+            partition_list.append(partition)
     return partition_list
 
 
@@ -67,10 +67,10 @@ class GcsJsonIoManager(IOManager):
         """Load each of the json partitions."""
         bucket = self.client.bucket(self.bucket_name)
         if context.has_asset_partitions:
-            context.log.debug("Found partitions in inputcontext")
+            context.log.debug("Found partitions in inputcontext (upstream asset)")
             if context.has_partition_key:
                 context.log.debug(
-                    "Current run has partition key. Loading single partition."
+                    "Current run is partitioned. Loading single partition."
                 )
                 # load a single partition
                 blob = bucket.blob(
@@ -80,7 +80,7 @@ class GcsJsonIoManager(IOManager):
                 return json.loads(data)
             else:
                 context.log.debug(
-                    "Current run is not partitioned. Loading all partitions."
+                    "Current run is not partitioned but upstream output is. Loading all non-empty partitions."
                 )
                 # load all partitions
                 partitions = get_partitioned_input_list(context)
@@ -97,10 +97,10 @@ class GcsJsonIoManager(IOManager):
                 ]  # filter out empty partitions
         else:
             context.log.debug(
-                "Did not find inputcontext partitions. Trying to load non-partitioned json asset..."
+                "Upstream asset is not partitioned. Loading single json asset..."
             )
             blob = bucket.blob(
-                f"{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.json"
+                f"{dagster_asset_path_identifier(self.prefix, context)}.json"
             )
             data = blob.download_as_string()
             return json.loads(data)
@@ -184,15 +184,15 @@ class GCSPolarsParquetIOManager(IOManager):
 
     def load_input(self, context: InputContext) -> str | list[str]:
         if context.has_asset_partitions:
-            context.log.debug("Found partitions in inputcontext")
+            context.log.debug("Found partitions in inputcontext (upstream asset)")
             if context.has_partition_key:
                 context.log.debug(
-                    "Current run has partition key. Returning single partition path."
+                    "Current run is partitioned. Returning single partition path."
                 )
                 return f"gs://{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet"
             else:
                 context.log.debug(
-                    "Current run is not partitioned. Returning all non-empty partition paths."
+                    "Current run is not partitioned but upstream output is. Returning all non-empty partition paths."
                 )
                 partitions = get_partitioned_input_list(context)
                 filepaths = []
@@ -208,6 +208,6 @@ class GCSPolarsParquetIOManager(IOManager):
                 return filepaths
         else:
             context.log.debug(
-                "Did not find inputcontext partitions. Returning non-partitioned file path..."
+                "Upstream asset is not partitioned. Returning non-partitioned file path..."
             )
-            return f"gs://{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.parquet"
+            return f"gs://{dagster_asset_path_identifier(self.prefix, context)}.json'.parquet"
