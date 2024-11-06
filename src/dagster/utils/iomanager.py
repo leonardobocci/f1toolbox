@@ -157,8 +157,11 @@ class GCSPolarsParquetIOManager(IOManager):
                 os.rmdir(f"/tmp/{filedir}")
                 num_rows = meta["num_rows"]
                 num_cols = meta["num_columns"]
-            except pl.exceptions.ComputeError as e:
-                if "not yet implemented" in str(e):
+            except (
+                pl.exceptions.ComputeError,
+                pl.exceptions.InvalidOperationError,
+            ) as e:
+                if "not yet implemented" in str(e) or "not yet supported" in str(e):
                     context.log.warning(
                         f"Error sinking parquet: {e}. Trying to collect and write"
                     )
@@ -186,7 +189,7 @@ class GCSPolarsParquetIOManager(IOManager):
                 context.log.debug(
                     "Current run has partition key. Returning single partition path."
                 )
-                return f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet"
+                return f"gs://{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet"
             else:
                 context.log.debug(
                     "Current run is not partitioned. Returning all non-empty partition paths."
@@ -207,4 +210,4 @@ class GCSPolarsParquetIOManager(IOManager):
             context.log.debug(
                 "Did not find inputcontext partitions. Returning non-partitioned file path..."
             )
-            return f"{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.parquet"
+            return f"gs://{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context.upstream_output)}.parquet"

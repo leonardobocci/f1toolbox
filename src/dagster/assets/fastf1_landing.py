@@ -1,3 +1,5 @@
+import polars as pl
+
 from dagster import AssetIn, AssetOut, asset, multi_asset
 from src.dagster.partitions import fast_f1_partitions, fast_f1_season_partitions
 from src.dagster.utils.fastf1_extractor import (
@@ -90,8 +92,9 @@ def landing_fastf1_session_assets(context):
 )
 def landing_fastf1_rich_telemetry(context, landing_fastf1_telemetry):
     year, event_num = validate_event_num(context)
+    df = pl.scan_parquet(landing_fastf1_telemetry)
     if not event_num:
         return None
     return enrich_individual_telemetry_parquet_files(
-        context, landing_fastf1_telemetry
+        context, df
     )  # saves to a rich_telemetry directory
