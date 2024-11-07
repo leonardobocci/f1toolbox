@@ -1,0 +1,44 @@
+name: 'f1toolbox'
+version: '1.0.0'
+config-version: 2
+
+profile: 'f1toolbox'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+data_tests:
+  +severity: warn
+
+#https://docs.getdbt.com/docs/configuring-models
+models:
+  #https://docs.dagster.io/integrations/dbt/reference#emit-column-level-lineage-as-materialization-metadata
+  f1toolbox:
+    # Config indicated by + and applies to all files under models/<DIRECTORYNAME FROM YAML NAME>/
+    bronze:
+    #https://docs.getdbt.com/docs/build/materializations
+    #https://clickhouse.com/blog/clickhouse-dbt-project-introduction-and-webinar#model-types
+      +materialized: view
+      fantasy:
+        +group: bronze_fantasy_views
+      fastf1:
+        +group: bronze_fastf1_views
+    silver:
+      +materialized: view
+      +group: silver_views
+    gold:
+      +materialized: incremental
+      +group: gold_incremental_views
+      +schema: gold
+    marts:
+      +materialized: incremental
+      +group: marts_incremental_views
+      +schema: marts

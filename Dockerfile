@@ -1,42 +1,33 @@
-FROM python:3.10.12
+FROM python:3.10.12 AS builder
 
-#https://github.com/orgs/python-poetry/discussions/1879
-ENV PYTHONUNBUFFERED=1 \
-    # prevents python creating .pyc files
-    PYTHONDONTWRITEBYTECODE=1 \
-    \
-    # pip
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    \
-    # poetry
-    # https://python-poetry.org/docs/configuration/#using-environment-variables
-    POETRY_VERSION=1.8.3 \
-    # make poetry install to this location
-    POETRY_HOME="/opt/poetry" \
-    # make poetry create the virtual environment in the project's root
-    # it gets named `.venv`
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    # do not ask any interactive question
-    POETRY_NO_INTERACTION=1 \
-    \
-    # paths
-    # this is where our requirements + virtual environment will live
-    PYSETUP_PATH="/opt/pysetup" \
-    VENV_PATH="/opt/pysetup/.venv"
+# --- Install Poetry ---
+ARG POETRY_VERSION=1.8
 
-# prepend poetry and venv to path
-ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_NO_INTERACTION=1
+ENV POETRY_VIRTUALENVS_IN_PROJECT=1
+ENV POETRY_VIRTUALENVS_CREATE=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+# Tell Poetry where to place its cache and virtual environment
+ENV POETRY_CACHE_DIR=/opt/.cache
+
+RUN pip install "poetry==${POETRY_VERSION}"
 
 WORKDIR /app
 
+# --- Reproduce the environment ---
 COPY poetry.lock pyproject.toml ./
-RUN curl -sSL https://install.python-poetry.org | python3 -
-RUN poetry install --without dev
+# Install the dependencies and clear the cache afterwards.
+RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
-COPY ./src app/src
+# Now let's build the runtime image from the builder.
+FROM builder AS runtime
 
-WORKDIR /app/src/dbt
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
-ENTRYPOINT [ "poetry run dbt deps" ]
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY ./src ./src/
+
+RUN poetry run dagster-dbt project prepare-and-package --file /app/src/dagster/dbt_project.py

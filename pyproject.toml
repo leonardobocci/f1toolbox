@@ -11,6 +11,8 @@ python = ">=3.10.12,<3.13"
 dagster = ">=1.7.10, <1.9"
 dagster-webserver = ">=1.7.10" #pinned by dagster dependencies
 dagster-dbt = ">=0.23.10" #pinned by dagster dependencies
+dagster-postgres = ">=0.23.10" #pinned by dagster dependencies
+dagster-k8s = ">=0.23.10" #pinned by dagster dependencies
 polars = {extras = ["numpy"], version = ">=1.0.0, <2"}
 flatdict = "4.0.1" #small package, don't want to be affected by versioning
 pyarrow = ">=16.1.0, <17"
@@ -18,6 +20,9 @@ fastf1 = ">=3.3.9" #only latest ver is supported
 dbt-core = ">=1.8.3, <2"
 dbt-clickhouse = ">=1.8.0, <2"
 scipy = ">=1.14.0, <2"
+google-cloud-storage = "^2.18.2"
+gcsfs = "^2024.9.0.post1"
+dagster-airbyte = "^0.24.13"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.2.2, <9"
@@ -26,6 +31,7 @@ ruff = ">=0.5.2, <1"
 pre-commit = ">=3.7.1, <4"
 hvplot = ">=0.10.0, <1"
 sqlfluff = ">=3.1.0, <4"
+vulture = "^2.13"
 
 [build-system]
 requires = ["poetry-core>=1.8.3"]
@@ -33,3 +39,11 @@ requires = ["poetry-core>=1.8.3"]
 [tool.ruff.lint]
 #sort imports automatically
 extend-select = ["I"]
+
+[tool.dagster]
+module_name = "src.dagster.definitions"
+code_location_name = "F1 Toolbox Core"
+
+[tool.vulture]
+paths = ["src/"]
+min_confidence = 80

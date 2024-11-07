@@ -1,22 +1,8 @@
-import glob
-import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 import scipy.signal as ss
-
-from src.dagster.assets import constants
-from src.dagster.utils import iomanager
-
-
-def parse_json_signals(context, signal_directory: str) -> pl.DataFrame:
-    """Given an asset subdirectory, load all json files for all years and return a polars dataframe."""
-    glob_path = glob.glob(f"data/landing/fastf1/*/{signal_directory}/*.json")
-    dfs = [pl.read_json(file) for file in glob_path]
-    df = pl.concat(dfs)
-    return df
 
 
 def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
@@ -29,13 +15,13 @@ def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
                     f"{signal_directory}/*.parquet"
                 )
             ]
-        ).collect(streaming=True)
+        )
     else:
         df = pl.scan_parquet(f"data/landing/fastf1/*/{signal_directory}/*.parquet")
     return df
 
 
-def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.DataFrame:
     df = df.with_columns(
         local_start_datetime=pl.col("start_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
         local_end_datetime=pl.col("end_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
@@ -90,7 +76,8 @@ def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
             "hour_offset", "day_offset", "local_start_datetime", "local_end_datetime"
         )
     )
-    return df
+    return df.collect()  # tested as of polars 1.12.0
+    # collect required to prevent polars.exceptions.ComputeError: unable to determine date parsing format, all values are null
 
 
 def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
@@ -105,7 +92,9 @@ def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 def parse_lap_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
     return df.with_columns(
-        end_time=pl.col("Time").shift(-1, fill_value=df.select(pl.last("Time")))
+        end_time=pl.col("Time").shift(
+            -1, fill_value=df.select(pl.last("Time")).collect()
+        )
     )  # last value would be null otherwise
 
 
@@ -114,6 +103,7 @@ def parse_weather_timestamps(
 ) -> pl.LazyFrame:
     """Given a weather dataframe, parse the timestamp and return a new column with the time in seconds from the start of the session."""
     selection = df.columns
+    sessions_df = sessions_df.with_columns(id=pl.col("id").cast(pl.Int32))
     df = df.join(sessions_df, left_on="session_id", right_on="id")
     df = df.with_columns(
         seconds_from_session_start=pl.col("Time") / 1e9  # from nanoseconds to seconds
@@ -227,7 +217,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             )
         )
         results = df.select([*selection, pl.col("lateral_acceleration")])
-        # divide by 9.80665 to get g's
+        # divide by 9.80665 to get g's if required
         context.log.debug("Added lateral acceleration.")
         return results
 
@@ -247,7 +237,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             )
         )
         results = df.select([*selection, pl.col("longitudinal_acceleration")])
-        # divide by 9.80665 to get g's
+        # divide by 9.80665 to get g's if required.
         context.log.debug("Added longitudinal acceleration.")
         return results
 
@@ -329,54 +319,14 @@ def handle_outliers(context, df: pl.LazyFrame, handling="drop") -> pl.LazyFrame:
     return df
 
 
-def enrich_individual_telemetry_parquet_files(context) -> None:
+def enrich_individual_telemetry_parquet_files(context, df) -> None:
     """For each small telemetry file, add accelerations and digital filters, running operations in parallel (because this is an IO bound operation). Write the dfs to a separate directory with parquet files."""
 
-    def extract_from_path(path, target="filenum"):
-        if target == "filenum":
-            match = re.search(r"telemetry/(\d+).parquet", path)
-        elif target == "year":
-            match = re.search(r"fastf1/(\d+)/telemetry", path)
-        return match.group(1)
-
-    def process_file(path):
-        file_number = extract_from_path(str(path), target="filenum")
-        year = extract_from_path(str(path), target="year")
-        df = pl.scan_parquet(path)
-        df = telemetry_coordinate_calculations(context, df)
-        df = enrich_fastf1_telemetry(context, df)
-        df = handle_outliers(context, df)
-        df = apply_digital_filter(context, df)
-        df = handle_outliers(
-            context, df, handling="winsorize"
-        )  # this is to handle any outliers that may have been introduced by the filter
-        iomanager.polars_to_parquet(
-            filedir=f"{constants.landing_FASTF1_PATH}/{year}/rich_telemetry",
-            filename=file_number,
-            data=df,
-            context=context,
-        )
-
-    paths_list = [
-        x for x in Path(constants.landing_FASTF1_PATH).rglob("*/telemetry/*.parquet")
-    ]
-
-    with ThreadPoolExecutor(
-        max_workers=2
-    ) as executor:  # TODO: SMART SETTING FOR MAX WORKERS
-        futures = [executor.submit(process_file, path) for path in paths_list]
-        for future in as_completed(futures):
-            future.result()  # Wait for each future to complete. Raise exceptions.
-
-    return None
-
-
-def create_telemetry_scores(context, df: pl.LazyFrame) -> pl.LazyFrame:
-    """
-    TODO:
-    calculate acceleration scores (per session, taking fastest lap only, and normalizing tyre difference, to eliminate changing conditions)
-
-    quali: fastest lap only to get scores - ensure same tyre compound
-    race+sprint: all laps + normalize tyre compound based on degradation curve for tyre age and tyre compound mean difference.
-    """
-    pass
+    df = telemetry_coordinate_calculations(context, df)
+    df = enrich_fastf1_telemetry(context, df)
+    df = handle_outliers(context, df)
+    df = apply_digital_filter(context, df)
+    df = handle_outliers(
+        context, df, handling="winsorize"
+    )  # this is to handle any outliers that may have been introduced by the filter
+    return df

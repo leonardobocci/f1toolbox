@@ -1,0 +1,9 @@
+session_id,event_id,constructor_name,driver_code,driver_number,stint_number,session_time_lap_end,lap_time,tyre_compound,tyre_age_laps,pit_out_time,pit_in_time,track_status
+1,1,Mercedes,HAM,44,1,090000,90,Soft,0,,,1
+1,1,Mercedes,HAM,44,1,095000,95,Soft,1,,,1
+1,1,Mercedes,HAM,44,1,195000,100,Soft,2,,,1
+1,1,Ferrari,VET,5,1,090000,90,Medium,5,,,1
+1,1,Ferrari,VET,5,1,181000,91,Medium,6,,,1
+1,2,Red Bull,RIC,3,1,090000,90,Soft,0,,,1
+1,2,Red Bull,RIC,3,1,181000,91,Soft,1,,,0
+1,2,Red Bull,RIC,3,1,273000,92,Soft,2,0,,1

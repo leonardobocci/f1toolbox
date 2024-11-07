@@ -1,17 +1,76 @@
+import functools
+import time
 from datetime import datetime
 
 import fastf1
+import fastf1.plotting as f1plot
 import flatdict
 import polars as pl
 
 from src.dagster.assets import constants
-from src.dagster.utils.iomanager import polars_to_parquet
-from src.dagster.utils.iomanager import save_landing_fastf1_json as save_json
 
 
-def _extract_event(
-    context, session: fastf1.core.Session, year: int, event_num: int, session_num: int
-) -> dict:
+def retry(exception_to_check, tries=3, delay=1):
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            _tries = tries
+            # Try to extract context from either positional or keyword arguments
+            context = None
+            if "context" in kwargs:
+                context = kwargs["context"]
+            elif len(args) > 0:
+                context = args[0]  # Assuming context is the first positional argument
+
+            while _tries > 1:
+                try:
+                    return func(*args, **kwargs)
+                except exception_to_check as e:
+                    context.log.warning(f"Retrying exception: {str(e)}")
+                    context.log.info(
+                        f"Retrying in {delay} seconds... ({_tries-1} tries left)"
+                    )
+                    time.sleep(delay)
+                    _tries -= 1
+                    if exception_to_check == fastf1.core.DataNotLoadedError:
+                        context.log.info("Clearing fastf1 cache")
+                        fastf1.Cache.clear_cache()
+            # Last attempt (no more retries)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator_retry
+
+
+def validate_event_num(context) -> tuple[int, int] | tuple[None, None]:
+    partition_key = context.partition_key  # event|year of str subclass dagster._core.definitions.multi_dimensional_partitions.MultiPartitionKey
+    year = int(
+        [
+            item
+            for item in partition_key.dimension_keys
+            if item.dimension_name == "year"
+        ][0].partition_key
+    )
+    event_num = int(
+        [
+            item
+            for item in partition_key.dimension_keys
+            if item.dimension_name == "event"
+        ][0].partition_key
+    )
+    # validate if the event exists for the year
+    if event_num > get_num_events(year):
+        context.log.warning(
+            f"Event {event_num} does not exist or has not occured for year {year}. Skipping..."
+        )
+        return None, None
+    context.log.debug(f"Event {event_num} exists for year {year}.")
+    return year, event_num
+
+
+@retry(exception_to_check=fastf1.core.DataNotLoadedError, tries=5, delay=10)
+def extract_event(context, year: int, event_num: int) -> tuple[dict, pl.DataFrame]:
     """Extract event info from a session object and save to landing zone"""
 
     def extract_circuit_info(year: int, circuit_key: int) -> tuple[pl.DataFrame, int]:
@@ -20,6 +79,10 @@ def _extract_event(
         track_map_rotation_degrees = circuit_info.rotation
         return corners, track_map_rotation_degrees
 
+    session = fastf1.get_session(year=year, gp=event_num, identifier=4)
+    if not session.f1_api_support:
+        raise Exception("Fast F1 does not support this session")
+    session.load(laps=False, telemetry=False, weather=False, messages=False)
     event = {
         "id": session.session_info["Meeting"]["Key"],
         "name": session.session_info["Meeting"]["Name"],
@@ -31,14 +94,12 @@ def _extract_event(
     flat_event = dict(flat_event)
     flat_event["season"] = year
     flat_event["round_number"] = event_num
-    flat_event["session_number"] = session_num
 
     # Extract circuit information
     circuit_key = flat_event["Circuit_Key"]
     corners, track_map_rotation_degrees = extract_circuit_info(year, circuit_key)
     flat_event["track_map_rotation_degrees"] = track_map_rotation_degrees
 
-    save_json(flat_event, str(event["id"]), year, "events")
     corners = corners.with_columns(pl.lit(year).alias("year"))
     corners = corners.with_columns(pl.lit(circuit_key).alias("circuit_key"))
     corners = corners.with_columns(pl.col("X").shift(1, fill_value=0).alias("x_prev"))
@@ -50,12 +111,6 @@ def _extract_event(
         .alias("distance_from_last_corner")
     )
     corners = corners.drop(["x_prev", "y_prev"])
-    polars_to_parquet(
-        filedir=f"{constants.landing_FASTF1_PATH}/{year}/circuit_corners",
-        filename=f"{circuit_key}",
-        data=corners,
-        context=context,
-    )
     """
     Session Object
     ~ if useful
@@ -84,31 +139,31 @@ def _extract_event(
     get_driver(identifier): get driver object by number or name
     ~ get_circuit_info(): get circuit information
     """
-    return flat_event
+    return flat_event, corners
 
 
 def _extract_session(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+    session: fastf1.core.Session, session_num: int, event_id: str
+) -> dict:
     """Extract session data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
     session = {
         "id": session.session_info["Key"],
-        "event_id": event_info["id"],
+        "session_number": session_num,
+        "event_id": event_id,
         "name": session.session_info["Name"],
         "type": session.session_info["Type"],
         "start_date": session.session_info["StartDate"].isoformat(),
         "end_date": session.session_info["EndDate"].isoformat(),
         "local_timezone_utc_offset": str(session.session_info["GmtOffset"]),
     }
-    save_json(session, session["id"], year, "sessions")
-    return session["id"]
+    return session
 
 
 def _extract_session_weather(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+    session: fastf1.core.Session,
+) -> tuple[int, pl.LazyFrame] | None:
     """Extract weather data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -116,23 +171,15 @@ def _extract_session_weather(
     try:
         weather = pl.LazyFrame(session.weather_data)
     except fastf1.core.DataNotLoadedError:
-        return None
+        return None, None
     weather = weather.with_columns(pl.lit(session_id).alias("session_id"))
     weather = weather.with_columns(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
-    polars_to_parquet(
-        filedir=f"{constants.landing_FASTF1_PATH}/{year}/weathers",
-        filename=f"{session_id}",
-        data=weather,
-        context=context,
-    )
-    return session_id
+    return session_id, weather
 
 
-def _extract_session_results(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_results(session: fastf1.core.Session) -> tuple[int, pl.LazyFrame]:
     """Extract results data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -142,39 +189,25 @@ def _extract_session_results(
     results = results.with_columns(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
-    polars_to_parquet(
-        filedir=f"{constants.landing_FASTF1_PATH}/{year}/results",
-        filename=f"{session_id}",
-        data=results,
-        context=context,
-    )
-    return session_id
+    return session_id, results
 
 
-def _extract_session_laps(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+def _extract_session_laps(session: fastf1.core.Session) -> tuple[int, pl.LazyFrame]:
     """Extract lap data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
-    laps = pl.LazyFrame(session.laps)
+    laps = pl.LazyFrame(session.laps).with_columns(pl.col("Deleted").cast(pl.Utf8))
     session_id = session.session_info["Key"]
     laps = laps.with_columns(pl.lit(session_id).alias("session_id"))
     laps = laps.with_columns(
         pl.lit(session.session_info["Meeting"]["Key"]).alias("event_id")
     )
-    polars_to_parquet(
-        filedir=f"{constants.landing_FASTF1_PATH}/{year}/laps",
-        filename=f"{session_id}",
-        data=laps,
-        context=context,
-    )
-    return session_id
+    return session_id, laps
 
 
 def _extract_session_telemetry(
-    context, session: fastf1.core.Session, event_info: dict, year: int
-) -> int:
+    session: fastf1.core.Session,
+) -> tuple[int, pl.LazyFrame] | None:
     """Extract telemetry data from a session object and save to landing zone (parquet).
     The file path includes the session id.
     Returns the session id that was saved."""
@@ -183,7 +216,7 @@ def _extract_session_telemetry(
     telemetry = pl.LazyFrame()
     if not (car_data and pos_data):
         # Telemetry is not available
-        return None
+        return None, None
     for key in session.car_data.keys():
         # recast to Nullable float type to remove dtype warnings
         session.pos_data[key]["X"] = session.pos_data[key]["X"].astype("Float64")
@@ -199,91 +232,150 @@ def _extract_session_telemetry(
             telemetry = car_telemetry
     session_id = session.session_info["Key"]
     telemetry = telemetry.with_columns(pl.lit(session_id).alias("session_id"))
-    polars_to_parquet(
-        filedir=f"{constants.landing_FASTF1_PATH}/{year}/telemetry",
-        filename=f"{session_id}",
-        data=telemetry,
-        context=context,
+    return session_id, telemetry
+
+
+def extract_tyre_compounds(year: int) -> pl.DataFrame:
+    session = fastf1.get_session(year=year, gp=1, identifier=5)
+    tyre_dict = f1plot.get_compound_mapping(session)
+    tyre_compounds = (
+        pl.from_dict(tyre_dict)
+        .transpose(include_header=True, header_name="compound")
+        .rename({"column_0": "color"})
     )
-    return session_id
+    tyre_compounds = tyre_compounds.with_columns(pl.lit(year).alias("season"))
+    return tyre_compounds
 
 
+@retry(exception_to_check=fastf1.core.DataNotLoadedError, tries=5, delay=10)
 def extract_fastf1_signals(
-    context, year: int, session_num: int, event_num: int, extraction_metadata: dict
-) -> dict:
+    context,
+    year: int,
+    session_num: int,
+    event_num: int,
+    event_id: str,
+    meta: dict,
+) -> tuple[dict, pl.LazyFrame, pl.LazyFrame | None, pl.LazyFrame, pl.LazyFrame | None]:
     session = fastf1.get_session(year=year, gp=event_num, identifier=session_num)
-    if not session.f1_api_support:
-        raise Exception("Fast F1 does not support this session")
     session.load(laps=True, telemetry=True, weather=True, messages=False)
-    # Collect general event information
-    event_info = _extract_event(context, session, year, event_num, session_num)
-    context.log.info(f"{year}_{event_num}_{session_num} saved")
     # Collect session information
-    saved_session = _extract_session(context, session, event_info, year)
-    extraction_metadata["saved_sessions"].append(saved_session)
-    context.log.info(f"{year}_{event_num}_{session_num} session saved")
+    saved_session = _extract_session(session, session_num, event_id)
+    meta.extraction_metadata["saved_sessions"].append(saved_session["id"])
+    context.log.info(f"{year}_{event_num}_{session_num} session found")
     # Collect session results
-    saved_results_session = _extract_session_results(context, session, event_info, year)
-    extraction_metadata["saved_results"].append(saved_results_session)
-    context.log.info(f"{year}_{event_num}_{session_num} results saved")
+    saved_results_session, saved_session_results = _extract_session_results(session)
+    meta.extraction_metadata["saved_results"].append(saved_results_session)
+    context.log.info(f"{year}_{event_num}_{session_num} results found")
     # Collect event weather data
-    saved_weather_session = _extract_session_weather(context, session, event_info, year)
+    saved_weather_session, saved_weather = _extract_session_weather(session)
     if not saved_weather_session:
-        extraction_metadata["session_level_errors"].append(
+        meta.extraction_metadata["session_level_errors"].append(
             f"missing_weather_{year}_{event_num}_{session_num}"
         )
         context.log.error(f"{year}_{event_num}_{session_num} weather not available")
+        saved_weather = pl.LazyFrame()
     else:
-        extraction_metadata["saved_weathers"].append(saved_weather_session)
-        context.log.info(f"{year}_{event_num}_{session_num} weather saved")
+        meta.extraction_metadata["saved_weathers"].append(saved_weather_session)
+        context.log.info(f"{year}_{event_num}_{session_num} weather found")
     # Collect lap data
-    saved_lap_session = _extract_session_laps(context, session, event_info, year)
-    extraction_metadata["saved_laps"].append(saved_lap_session)
-    context.log.info(f"{year}_{event_num}_{session_num} laps saved")
+    saved_lap_session, saved_laps = _extract_session_laps(session)
+    meta.extraction_metadata["saved_laps"].append(saved_lap_session)
+    context.log.info(f"{year}_{event_num}_{session_num} laps found")
     # Collect telemetry data
-    saved_telemetry_session = _extract_session_telemetry(
-        context, session, event_info, year
-    )
+    saved_telemetry_session, saved_telemetry = _extract_session_telemetry(session)
     if not saved_telemetry_session:
-        extraction_metadata["session_level_errors"].append(
+        meta.extraction_metadata["session_level_errors"].append(
             f"missing_telemetry_{year}_{event_num}_{session_num}"
         )
         context.log.error(f"{year}_{event_num}_{session_num} telemetry not available")
+        saved_telemetry = pl.LazyFrame()
     else:
-        extraction_metadata["saved_telemetry"].append(saved_telemetry_session)
-        context.log.info(f"{year}_{event_num}_{session_num} telemetry saved")
-    return extraction_metadata
+        meta.extraction_metadata["saved_telemetry"].append(saved_telemetry_session)
+        context.log.info(f"{year}_{event_num}_{session_num} telemetry found")
+    return (
+        saved_session,
+        saved_session_results,
+        saved_weather,
+        saved_laps,
+        saved_telemetry,
+    )
 
 
-def extract_fastf1(context, year: int, event_num: int = 1) -> dict:
-    """
-    Extract all race events in a year and save to landing zone.
-    """
-    extraction_metadata = {
-        "saved_events": [],
-        "total_events": 0,
-        "saved_sessions": [],
-        "saved_weathers": [],
-        "saved_laps": [],
-        "saved_telemetry": [],
-        "saved_results": [],
-        "saved_circuits": [],
-        "session_level_errors": [],
-    }
+def get_num_events(year: int) -> int:
     event_calendar = fastf1.get_event_schedule(year)
     num_events = len(event_calendar.loc[event_calendar["EventFormat"] != "testing"])
-    extraction_metadata["total_events"] = num_events
     if year == datetime.today().year:
         remaining_num_events = len(
             fastf1.get_events_remaining(dt=datetime.today(), include_testing=False)
         )
         num_events = num_events - remaining_num_events
-    context.log.info(f"Extracting {num_events} events for {year}")
-    while event_num <= num_events:
-        for session_num in constants.SESSIONS:
-            extraction_metadata = extract_fastf1_signals(
-                context, year, session_num, event_num, extraction_metadata
+    return num_events
+
+
+class ExtractionMetadata:
+    def __init__(self) -> None:
+        self.extraction_metadata = {
+            "saved_sessions": [],
+            "saved_weathers": [],
+            "saved_laps": [],
+            "saved_telemetry": [],
+            "saved_results": [],
+            "session_level_errors": [],
+        }
+
+
+def extract_fastf1(
+    context, year: int, event_num: int = 1
+) -> tuple[
+    dict,
+    pl.DataFrame,
+    dict,
+    pl.DataFrame,
+    dict,
+    pl.LazyFrame,
+    pl.LazyFrame | None,
+    pl.LazyFrame,
+    pl.LazyFrame | None,
+]:
+    """
+    Extract all race events in a year and save to landing zone.
+    """
+    meta = ExtractionMetadata()
+    # get tyre compounds for this season
+    sessions = []
+    session_results = pl.LazyFrame()
+    weather = pl.LazyFrame()
+    laps = pl.LazyFrame()
+    telemetry = pl.LazyFrame()
+
+    def create_or_concat_df(df, extension_df):
+        if df.collect_schema().len() == 0:
+            return extension_df
+        if extension_df.collect_schema().len() == 0:
+            return df
+        return pl.concat([df, extension_df])
+
+    # Collect general event information
+    event_info, _ = extract_event(context, year, event_num)
+    event_id = event_info["id"]
+    context.log.info(f"{year}_{event_num} event details found")
+    for session_num in constants.SESSIONS:
+        _sessions, _session_results, _weather, _laps, _telemetry = (
+            extract_fastf1_signals(
+                context, year, session_num, event_num, event_id, meta
             )
-        extraction_metadata["saved_events"].append(f"{year}_{event_num}")
-        event_num += 1
-    return extraction_metadata
+        )
+        context.log.info(f"{year}_{event_num} event signals found")
+        sessions.append(_sessions)
+        session_results = create_or_concat_df(session_results, _session_results)
+        weather = create_or_concat_df(weather, _weather)
+        laps = create_or_concat_df(laps, _laps)
+        telemetry = create_or_concat_df(telemetry, _telemetry)
+    return (
+        meta.extraction_metadata,
+        sessions,
+        session_results,
+        weather,
+        laps,
+        telemetry,
+    )
