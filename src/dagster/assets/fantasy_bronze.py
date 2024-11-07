@@ -130,6 +130,9 @@ def bronze_fantasy_current_constructors(
     context, bronze_fantasy_constructor_results, landing_fantasy_current_assets
 ):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
+    bronze_fantasy_constructor_results = pl.scan_parquet(
+        bronze_fantasy_constructor_results
+    )
     constructor_lookup = pl.scan_csv(
         "src/dagster/utils/map_fantasy/constructor_mapping.csv"
     )
@@ -156,6 +159,7 @@ def bronze_fantasy_current_drivers(
     context, bronze_fantasy_driver_results, landing_fantasy_current_assets
 ):
     """Parse landing zone json to parquet file for fantasy current constructor info"""
+    bronze_fantasy_driver_results = pl.scan_parquet(bronze_fantasy_driver_results)
     drivers_lookup = pl.scan_csv("src/dagster/utils/map_fantasy/driver_mapping.csv")
     unique_driver_list = bronze_fantasy_driver_results.select("id").unique()
     drivers_lookup = unique_driver_list.join(drivers_lookup, on="id", how="full")

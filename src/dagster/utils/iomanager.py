@@ -210,4 +210,4 @@ class GCSPolarsParquetIOManager(IOManager):
             context.log.debug(
                 "Upstream asset is not partitioned. Returning non-partitioned file path..."
             )
-            return f"gs://{dagster_asset_path_identifier(self.prefix, context)}.json'.parquet"
+            return f"gs://{self.bucket_name}/{dagster_asset_path_identifier(self.prefix, context)}.parquet"
