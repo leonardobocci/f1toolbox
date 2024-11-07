@@ -58,7 +58,7 @@ def bronze_fastf1_session_results(
 )
 def bronze_fastf1_sessions(
     context, landing_fastf1_sessions: list[list[dict]]
-) -> pl.LazyFrame:
+) -> pl.DataFrame:
     """Parse landing zone fastf1 sessions details to parquet file"""
     dfs = [pl.LazyFrame(data) for data in landing_fastf1_sessions]
     df = pl.concat(dfs)

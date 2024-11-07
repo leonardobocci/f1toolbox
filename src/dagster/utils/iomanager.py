@@ -84,6 +84,7 @@ class GcsJsonIoManager(IOManager):
                 )
                 # load all partitions
                 partitions = get_partitioned_input_list(context)
+                context.log.debug(f"Loaded {len(partitions)} partitions.")
                 blobs = [
                     bucket.blob(
                         f"{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.json"
@@ -92,9 +93,13 @@ class GcsJsonIoManager(IOManager):
                 ]
                 data = [blob.download_as_string() for blob in blobs]
                 loaded_dicts = [json.loads(d) for d in data]
-                return [
-                    item for item in loaded_dicts if item
+                non_empty_partitions = [
+                    item for item in loaded_dicts if len(item) > 0
                 ]  # filter out empty partitions
+                context.log.debug(
+                    f"Loaded {len(non_empty_partitions)} non-empty partitions."
+                )
+                return non_empty_partitions
         else:
             context.log.debug(
                 "Upstream asset is not partitioned. Loading single json asset..."
@@ -195,16 +200,18 @@ class GCSPolarsParquetIOManager(IOManager):
                     "Current run is not partitioned but upstream output is. Returning all non-empty partition paths."
                 )
                 partitions = get_partitioned_input_list(context)
+                context.log.debug(f"Found {len(partitions)} partitions.")
                 filepaths = []
                 for partition in partitions:
                     filepath = f"gs://{self.bucket_name}/{'/'.join([self.prefix, *context.upstream_output.asset_key.path, partition])}.parquet"
                     try:
-                        parquet_metadata(filepath)
-                        filepaths.append(filepath)
+                        if parquet_metadata(filepath).to_dict()["num_columns"] > 0:
+                            filepaths.append(filepath)
                     except pa.lib.ArrowInvalid:
                         context.log.warning(
                             f"Found empty partition: {partition} in file {filepath} Skipping..."
                         )
+                context.log.debug(f"Returning {len(filepaths)} non-empty partitions.")
                 return filepaths
         else:
             context.log.debug(

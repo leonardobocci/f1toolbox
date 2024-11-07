@@ -21,7 +21,7 @@ def parse_parquet_signals(context, signal_directory: str) -> pl.LazyFrame:
     return df
 
 
-def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.DataFrame:
     df = df.with_columns(
         local_start_datetime=pl.col("start_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
         local_end_datetime=pl.col("end_date").str.to_datetime("%Y-%m-%dT%H:%M:%S"),
@@ -76,7 +76,8 @@ def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
             "hour_offset", "day_offset", "local_start_datetime", "local_end_datetime"
         )
     )
-    return df
+    return df.collect()  # tested as of polars 1.12.0
+    # collect required to prevent polars.exceptions.ComputeError: unable to determine date parsing format, all values are null
 
 
 def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
