@@ -1,40 +1,46 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: check-added-large-files
-        name: Check for files larger than 5 MB
-        args: [ "--maxkb=5120" ]
-      - id: end-of-file-fixer
-        name: Check for a blank line at the end of scripts (auto-fixes)
-      - id: trailing-whitespace
-        name: Check for trailing whitespaces (auto-fixes)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.8
-    hooks:
-      - id: ruff-format
-        name: ruff formatter
-        #exclude: test_example_module.py|run_pipeline.py
-      - id: ruff
-        args: [ --fix ]
-        name: ruff linter
-        #exclude: test_example_module.py|run_pipeline.py
-  - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.2.0
-    hooks:
-      - id: sqlfluff-fix
-        name: sqlfluff-fix
-        # Set a couple of default flags:
-        #  - `--show-lint-violations` shows issues to not require running `sqlfluff lint`
-        #  - `--processes 0` to use maximum parallelism
-        # By default, this hook applies all rules.
-        entry: sqlfluff fix src/dagster/dbt/models src/dagster/dbt/tests --dialect=clickhouse --show-lint-violations --processes 0
-        language: python
-        description: "Fixes sql lint errors with `SQLFluff`"
-        types: [sql]
-        require_serial: true
-        additional_dependencies: []
-  - repo: https://github.com/jendrikseipp/vulture
-    rev: 'v2.3'  # or any later Vulture version
-    hooks:
-      - id: vulture
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-added-large-files
+    name: Check for files larger than 5 MB
+    args: [ "--maxkb=5120" ]
+  - id: end-of-file-fixer
+    name: Check for a blank line at the end of scripts (auto-fixes)
+  - id: trailing-whitespace
+    name: Check for trailing whitespaces (auto-fixes)
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.7.3
+  hooks:
+  - id: ruff-format
+    name: ruff formatter
+    #exclude: test_example_module.py|run_pipeline.py
+  - id: ruff
+    args: [ --fix ]
+    name: ruff linter
+    #exclude: test_example_module.py|run_pipeline.py
+- repo: https://github.com/sqlfluff/sqlfluff
+  rev: 3.2.5
+  hooks:
+  - id: sqlfluff-fix
+    name: sqlfluff-fix
+    # Set a couple of default flags:
+    #  - `--show-lint-violations` shows issues to not require running `sqlfluff lint`
+    #  - `--processes 0` to use maximum parallelism
+    # By default, this hook applies all rules.
+    entry: sqlfluff fix src/dagster/dbt/models src/dagster/dbt/tests --dialect=clickhouse --show-lint-violations --processes 0
+    language: python
+    description: "Fixes sql lint errors with `SQLFluff`"
+    types: [ sql ]
+    require_serial: true
+    additional_dependencies: []
+- repo: https://github.com/jendrikseipp/vulture
+  rev: 'v2.13' # or any later Vulture version
+  hooks:
+  - id: vulture
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+  - id: detect-secrets
+    args: [ 'src' ]
+    #exclude: package.lock.json

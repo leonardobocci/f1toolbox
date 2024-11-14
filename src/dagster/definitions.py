@@ -6,6 +6,7 @@ from dagster import (
     load_assets_from_modules,
 )
 from src.dagster.assets import (
+    airbyte_assets,
     dbt_assets,
     fantasy_bronze,
     fantasy_landing,
@@ -22,6 +23,7 @@ from src.dagster.jobs import (
     refresh_fastf1_landing,
     refresh_season_fastf1_landing,
 )
+from src.dagster.resources import airbyte_instance
 from src.dagster.utils.iomanager import GcsJsonIoManager, GCSPolarsParquetIOManager
 
 materialization_condition = AutomationCondition.eager()
@@ -29,6 +31,9 @@ materialization_condition = AutomationCondition.eager()
 landing_fantasy_assets = load_assets_from_modules([fantasy_landing])
 bronze_fantasy_assets = load_assets_from_modules(
     [fantasy_bronze], automation_condition=materialization_condition
+)
+all_airbyte_assets = load_assets_from_modules(
+    [airbyte_assets], automation_condition=materialization_condition
 )
 all_dbt_assets = load_assets_from_modules(
     [dbt_assets], automation_condition=materialization_condition
@@ -54,9 +59,11 @@ defs = Definitions(
         *landing_fastf1_assets,
         *bronze_fastf1_assets,
         *all_dbt_assets,
+        *all_airbyte_assets,
     ],
     jobs=all_jobs,
     resources={
+        "airbyte_instance": airbyte_instance,
         "dbt": DbtCliResource(project_dir=dbt_project),
         "gcs_json_fantasy_landing_io_manager": GcsJsonIoManager(
             project=PROJECT,

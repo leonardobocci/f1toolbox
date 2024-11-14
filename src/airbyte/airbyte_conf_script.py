@@ -21,8 +21,8 @@ with open("/home/leo/Downloads/airbyte_api_credentials.json", "rb") as f:
     client_id = airbyte_credentials["client_id"]
     client_secret = airbyte_credentials["client_secret"]
 
-host = "airbyte.104.154.59.130.nip.io"
-api_url = f"http://{host}/api/public/v1"
+host = "airbyte.f1toolbox.com"
+api_url = f"https://{host}/api/public/v1"
 workspace_id = "d7313f07-aa22-4193-bb4b-da2b40aaa00a"  # from airbyte UI link
 
 
@@ -81,7 +81,7 @@ def create_sources(streams: dict) -> list:
                 "streams": [
                     {
                         "name": streams[stream],
-                        "globs": ["**"],
+                        "globs": [f"**{streams[stream]}.parquet"],
                         "validation_policy": "Emit Record",
                         "schemaless": False,
                         "format": {"filetype": "parquet", "decimal_as_float": False},
@@ -117,7 +117,7 @@ def create_bigquery_destination() -> str:
                     "hmac_key_access_id": hmac_key_id,
                     "hmac_key_secret": hmac_key_secret,
                 },
-                "gcs_bucket_name": "airbyte_state_bucket",
+                "gcs_bucket_name": "f1toolbox-bronze-bucket",
                 "gcs_bucket_path": "data_sync/bigquery",
                 "keep_files_in_gcs-bucket": "Delete all tmp files from GCS",
             },
@@ -155,7 +155,7 @@ def create_connection(source: dict, destination: dict):
             ]
         },
         "dataResidency": "auto",
-        "prefix": "",
+        "prefix": "bq_",
         "namespaceDefinition": "destination",
         "nonBreakingSchemaUpdatesBehavior": "propagate_fully",
         "schedule": {"scheduleType": "manual"},
