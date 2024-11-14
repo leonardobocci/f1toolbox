@@ -2,7 +2,7 @@
 name = "f1toolbox"
 version = "0.1.0"
 description = "formula 1 telemetry and fantasy"
-authors = ["leo <leonardobocci99@hotmail.com>"]
+authors = ["leo <leonardobocci99@gmail.com>"]
 readme = "README.md"
 package-mode = false
 
@@ -23,6 +23,7 @@ scipy = ">=1.14.0, <2"
 google-cloud-storage = "^2.18.2"
 gcsfs = "^2024.9.0.post1"
 dagster-airbyte = "^0.24.13"
+kubernetes = "^31.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.2.2, <9"
@@ -32,6 +33,7 @@ pre-commit = ">=3.7.1, <4"
 hvplot = ">=0.10.0, <1"
 sqlfluff = ">=3.1.0, <4"
 vulture = "^2.13"
+detect-secrets = "^1.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.8.3"]
