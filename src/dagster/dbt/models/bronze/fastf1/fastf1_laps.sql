@@ -34,4 +34,4 @@ SELECT
     session_id,-- noqa: CP02
     event_id-- noqa: CP02
 FROM
-    {{ source("dagster", "bq_bronze_fastf1_laps") }}
+    {{ source("f1toolbox_core", "bq_bronze_fastf1_laps") }}

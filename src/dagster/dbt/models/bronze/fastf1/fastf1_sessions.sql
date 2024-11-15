@@ -6,4 +6,4 @@ SELECT
     type AS session_type,
     utc_start_datetime,
     utc_end_datetime
-FROM {{ source("dagster", "bq_bronze_fastf1_sessions") }}
+FROM {{ source("f1toolbox_core", "bq_bronze_fastf1_sessions") }}

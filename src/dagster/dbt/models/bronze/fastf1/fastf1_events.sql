@@ -8,4 +8,4 @@ SELECT
     season,
     round_number
 FROM
-    {{ source("dagster", "bq_bronze_fastf1_events") }}
+    {{ source("f1toolbox_core", "bq_bronze_fastf1_events") }}

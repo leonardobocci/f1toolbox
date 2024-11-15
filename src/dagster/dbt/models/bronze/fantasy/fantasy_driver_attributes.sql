@@ -24,4 +24,4 @@ SELECT
     race_dotd_points AS race_driver_of_day_points,
     season
 FROM
-    {{ source("dagster", "bq_bronze_fantasy_driver_results") }}
+    {{ source("f1toolbox_core", "bq_bronze_fantasy_driver_results") }}

@@ -17,4 +17,4 @@ SELECT
     longitudinal_acceleration,
     session_id,
     CAST(DRS AS Bool) AS is_drs_enabled -- noqa: CP02
-FROM {{ source("dagster", "bq_bronze_fastf1_telemetry") }}
+FROM {{ source("f1toolbox_core", "bq_bronze_fastf1_telemetry") }}

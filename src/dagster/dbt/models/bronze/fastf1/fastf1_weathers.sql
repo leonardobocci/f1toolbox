@@ -10,4 +10,4 @@ SELECT
     WindSpeed AS wind_speed, -- noqa: CP02
     session_id,
     event_id
-FROM {{ source("dagster", "bq_bronze_fastf1_weathers") }}
+FROM {{ source("f1toolbox_core", "bq_bronze_fastf1_weathers") }}
