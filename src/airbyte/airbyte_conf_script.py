@@ -2,6 +2,7 @@
 Requires local credential json files for service account key, hmac key and airbyte api credentials."""
 
 import json
+import logging
 
 import requests
 
@@ -23,7 +24,7 @@ with open("/home/leo/Downloads/airbyte_api_credentials.json", "rb") as f:
 
 host = "airbyte.f1toolbox.com"
 api_url = f"https://{host}/api/public/v1"
-workspace_id = "d7313f07-aa22-4193-bb4b-da2b40aaa00a"  # from airbyte UI link
+workspace_id = "25d4d82d-9a0f-4cf8-92a6-4847b420c982"  # from airbyte UI link
 
 
 def get_token():
@@ -74,10 +75,15 @@ def create_sources(streams: dict) -> list:
     saved_sources = []
     for stream in streams:
         payload = {
+            "name": stream,
+            "workspaceId": workspace_id,
             "configuration": {
                 "sourceType": "gcs",
-                "service_account": service_account_key,
                 "bucket": "f1toolbox-bronze-bucket",
+                "credentials": {
+                    "auth_type": "Service",
+                    "service_account": service_account_key,
+                },
                 "streams": [
                     {
                         "name": streams[stream],
@@ -88,8 +94,6 @@ def create_sources(streams: dict) -> list:
                     }
                 ],
             },
-            "name": stream,
-            "workspaceId": "d7313f07-aa22-4193-bb4b-da2b40aaa00a",
         }
         headers = {"authorization": f"Bearer {get_token()}"}
         response = requests.post(
@@ -182,12 +186,18 @@ streams = {
     "fastf1_sessions": "bronze_fastf1_sessions",
     "fastf1_tyres": "bronze_fastf1_tyres",
     "fastf1_weathers": "bronze_fastf1_weathers",
-    "fastf1_telemetry": "bronze_fastf1_telemetry",
+    # "fastf1_telemetry": "bronze_fastf1_telemetry", #disabled due to poor performance
 }
 delete_resources("sources")
 delete_resources("destinations")
 delete_resources("connections")
 sources = create_sources(streams)
+logging.info(f"sources: {sources}")
 destination = create_bigquery_destination()
+logging.info(f"destination: {destination}")
+connections = {}
 for source in sources:
-    create_connection(source, destination)
+    connections.update({source["source_name"]: create_connection(source, destination)})
+logging.info(f"connections: {connections}")
+with open("src/airbyte/latest_airbyte_connections.json", "w") as f:
+    json.dump(connections, f, indent=4)
