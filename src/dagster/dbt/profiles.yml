@@ -1,7 +1,10 @@
 f1toolbox:
-#https://docs.getdbt.com/docs/core/connect-data-platform/clickhouse-setup
+  #https://docs.getdbt.com/docs/core/connect-data-platform/clickhouse-setup
   target: dev
   outputs:
     dev:
-      type: clickhouse
-      schema: f1
+      type: bigquery
+      method: oauth
+      project: f1toolbox-core
+      dataset: f1toolbox_core
+      threads: 4 # Must be a value of 1 or greater
