@@ -1,17 +1,14 @@
 #how to - groups: https://github.com/dbt-labs/dbt-core/issues/8983
 groups:
-  - name: bronze_fantasy_views
-    owner:
-      name: leo
-  - name: bronze_fastf1_views
-    owner:
-      name: leo
-  - name: silver_views
-    owner:
-      name: leo
-  - name: gold_incremental_views
-    owner:
-      name: leo
-  - name: marts_incremental_views
-    owner:
-      name: leo
+- name: bronze
+  owner:
+    name: leo
+- name: silver
+  owner:
+    name: leo
+- name: gold
+  owner:
+    name: leo
+- name: marts
+  owner:
+    name: leo

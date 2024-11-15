@@ -3,4 +3,5 @@ SELECT
     name AS asset_name,
     active AS is_active,
     last_updated
-FROM file('fantasy/drivers.parquet', 'Parquet')
+FROM
+    {{ source("dagster", "bq_bronze_fantasy_current_drivers") }}

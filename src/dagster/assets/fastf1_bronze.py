@@ -1,12 +1,13 @@
 import polars as pl
 
-from dagster import AssetIn, asset
+from dagster import AssetIn, AssetKey, MetadataValue, asset
 from src.dagster.utils.fastf1_parser import (
     parse_lap_timestamps,
     parse_results_lap_times,
     parse_session_timestamps,
     parse_weather_timestamps,
 )
+from src.dagster.utils.gcs_to_bigquery import load_parquet_file_to_table
 
 
 @asset(
@@ -123,3 +124,17 @@ def bronze_fastf1_tyres(
     """Parse landing zone fastf1 tyre compound details to parquet file"""
     df = pl.scan_parquet(landing_fastf1_tyre_compounds)
     return df
+
+
+@asset(
+    group_name="bronze_bigquery",
+    compute_kind="python",
+    deps=AssetKey("bronze_fastf1_telemetry"),
+)
+def bq_bronze_fastf1_telemetry(context) -> None:
+    """Parse landing zone fastf1 event details to parquet file"""
+    table_id = "f1toolbox-core.f1toolbox_core.bq_bronze_fastf1_telemetry"
+    source_uri = "gs://f1toolbox-bronze-bucket/fastf1/bronze_fastf1_telemetry.parquet"
+    meta = load_parquet_file_to_table(source_uri, table_id)
+    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
+    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_cols"])})

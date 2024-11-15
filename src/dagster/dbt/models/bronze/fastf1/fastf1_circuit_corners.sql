@@ -7,4 +7,4 @@ SELECT
     Angle AS turn_angle, -- noqa: CP02
     distance_from_last_corner
 FROM
-    file('fastf1/circuit_corners.parquet', 'Parquet')
+    {{ source("dagster", "bq_bronze_fastf1_circuit_corners") }}

@@ -3,4 +3,4 @@ SELECT
     color,
     season
 FROM
-    file('fastf1/tyre_compounds.parquet', 'Parquet')
+    {{ source("dagster", "bq_bronze_fastf1_tyres") }}

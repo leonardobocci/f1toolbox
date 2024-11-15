@@ -2,27 +2,29 @@
 name = "f1toolbox"
 version = "0.1.0"
 description = "formula 1 telemetry and fantasy"
-authors = ["leo <leonardobocci99@hotmail.com>"]
+authors = ["leo <leonardobocci99@gmail.com>"]
 readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10.12,<3.13"
-dagster = ">=1.7.10, <1.9"
+dagster = ">=1.7.10, <2"
 dagster-webserver = ">=1.7.10" #pinned by dagster dependencies
 dagster-dbt = ">=0.23.10" #pinned by dagster dependencies
 dagster-postgres = ">=0.23.10" #pinned by dagster dependencies
 dagster-k8s = ">=0.23.10" #pinned by dagster dependencies
+dagster-airbyte = ">=0.24.13"
 polars = {extras = ["numpy"], version = ">=1.0.0, <2"}
 flatdict = "4.0.1" #small package, don't want to be affected by versioning
 pyarrow = ">=16.1.0, <17"
 fastf1 = ">=3.3.9" #only latest ver is supported
 dbt-core = ">=1.8.3, <2"
-dbt-clickhouse = ">=1.8.0, <2"
+dbt-bigquery = ">=1.8.0, <2"
 scipy = ">=1.14.0, <2"
-google-cloud-storage = "^2.18.2"
-gcsfs = "^2024.9.0.post1"
-dagster-airbyte = "^0.24.13"
+google-cloud-bigquery = ">=3.27.0"
+google-cloud-storage = ">=2.18.2"
+gcsfs = ">=2024.9.0.post1"
+kubernetes = ">=31.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.2.2, <9"
@@ -31,7 +33,8 @@ ruff = ">=0.5.2, <1"
 pre-commit = ">=3.7.1, <4"
 hvplot = ">=0.10.0, <1"
 sqlfluff = ">=3.1.0, <4"
-vulture = "^2.13"
+vulture = ">=2.13, <3"
+detect-secrets = ">=1.5.0, <2"
 
 [build-system]
 requires = ["poetry-core>=1.8.3"]

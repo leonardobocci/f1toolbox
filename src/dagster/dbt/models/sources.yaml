@@ -1,0 +1,55 @@
+sources:
+- name: dagster
+  tables:
+  - name: bq_bronze_fantasy_constructor_results
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fantasy_constructor_results" ]
+  - name: bq_bronze_fantasy_current_constructors
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fantasy_current_constructors" ]
+  - name: bq_bronze_fantasy_current_drivers
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fantasy_current_drivers" ]
+  - name: bq_bronze_fantasy_driver_results
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fantasy_driver_results" ]
+  - name: bq_bronze_fantasy_rounds
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fantasy_rounds" ]
+  - name: bq_bronze_fastf1_circuit_corners
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_circuit_corners" ]
+  - name: bq_bronze_fastf1_events
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_events" ]
+  - name: bq_bronze_fastf1_laps
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_laps" ]
+  - name: bq_bronze_fastf1_session_results
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_session_results" ]
+  - name: bq_bronze_fastf1_sessions
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_sessions" ]
+  - name: bq_bronze_fastf1_tyres
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_tyres" ]
+  - name: bq_bronze_fastf1_weathers
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_weathers" ]
+  - name: bq_bronze_fastf1_telemetry
+    meta:
+      dagster:
+        asset_key: [ "bq_bronze_fastf1_telemetry" ]

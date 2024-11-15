@@ -12,9 +12,9 @@ fantasy_landing_assets = AssetSelection.groups("landing_fantasy_files")
 fastf1_bronze_assets = AssetSelection.groups("bronze_fastf1_files")
 fantasy_bronze_assets = AssetSelection.groups("bronze_fantasy_files")
 
-dbt_assets = AssetSelection.groups(
-    "bronze_fantasy_views", "bronze_fastf1_views", "silver_views", "gold_"
-)
+airbyte_bigquery_assets = AssetSelection.groups("bronze_bigquery")
+
+dbt_assets = AssetSelection.groups("bronze", "silver", "gold", "marts")
 
 refresh_fantasy_landing = define_asset_job(
     name="refresh_fantasy_landing",
@@ -42,6 +42,11 @@ refresh_fastf1_landing = define_asset_job(
 refresh_fastf1_bronze = define_asset_job(
     name="refresh_fastf1_bronze",
     selection=fastf1_bronze_assets,
+)
+
+bigquery_refresh = define_asset_job(
+    name="refresh_bigquery",
+    selection=airbyte_bigquery_assets,
 )
 
 dbt_refresh = define_asset_job(
