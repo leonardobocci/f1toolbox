@@ -3,4 +3,4 @@ SELECT
     color,
     season
 FROM
-    {{ source("dagster", "bq_bronze_fastf1_tyres") }}
+    {{ source("f1toolbox_core", "bq_bronze_fastf1_tyres") }}

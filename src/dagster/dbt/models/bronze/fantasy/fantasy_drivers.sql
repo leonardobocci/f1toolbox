@@ -4,4 +4,4 @@ SELECT
     active AS is_active,
     last_updated
 FROM
-    {{ source("dagster", "bq_bronze_fantasy_current_drivers") }}
+    {{ source("f1toolbox_core", "bq_bronze_fantasy_current_drivers") }}

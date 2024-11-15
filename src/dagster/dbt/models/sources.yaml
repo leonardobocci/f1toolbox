@@ -1,5 +1,5 @@
 sources:
-- name: dagster
+- name: f1toolbox_core
   tables:
   - name: bq_bronze_fantasy_constructor_results
     meta:

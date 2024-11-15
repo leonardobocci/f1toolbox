@@ -24,4 +24,4 @@ SELECT
     NULL AS race_driver_of_day_points,
     season
 FROM
-    {{ source("dagster", "bq_bronze_fantasy_constructor_results") }}
+    {{ source("f1toolbox_core", "bq_bronze_fantasy_constructor_results") }}
