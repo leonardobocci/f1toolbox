@@ -1,5 +1,5 @@
 f1toolbox:
-  #https://docs.getdbt.com/docs/core/connect-data-platform/clickhouse-setup
+  #https://docs.getdbt.com/docs/core/connect-data-platform/bigquery-setup
   target: dev
   outputs:
     dev:

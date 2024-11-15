@@ -8,6 +8,6 @@ SELECT
     TrackTemp AS track_temperature, -- noqa: CP02
     WindDirection AS wind_direction_degrees, -- noqa: CP02
     WindSpeed AS wind_speed, -- noqa: CP02
-    CAST(session_id AS Nullable (Int64)) AS session_id,-- noqa: CP02
-    CAST(event_id AS Nullable (Int64)) AS event_id-- noqa: CP02
-FROM file('fastf1/weathers.parquet', 'Parquet')-- noqa: CP01,CP03
+    session_id,
+    event_id
+FROM {{ source("dagster", "bq_bronze_fastf1_weathers") }}

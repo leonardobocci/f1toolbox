@@ -8,4 +8,4 @@ SELECT
     season,
     round_number
 FROM
-    file('fastf1/events.parquet', 'Parquet')
+    {{ source("dagster", "bq_bronze_fastf1_events") }}

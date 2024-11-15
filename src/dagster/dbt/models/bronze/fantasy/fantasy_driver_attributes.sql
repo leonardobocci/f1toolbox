@@ -22,5 +22,6 @@ SELECT
     race_pos_points,
     NULL AS race_pit_stop_points,
     race_dotd_points AS race_driver_of_day_points,
-    CAST(season AS Nullable (Int64)) AS season
-FROM file('fantasy/driver_fantasy_attributes.parquet', 'Parquet')-- noqa: CP03
+    season
+FROM
+    {{ source("dagster", "bq_bronze_fantasy_driver_results") }}

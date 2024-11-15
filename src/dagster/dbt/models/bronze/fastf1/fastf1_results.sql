@@ -20,6 +20,6 @@ SELECT
     lap_time_seconds,-- noqa: CP02
     Status AS fastf1_status, -- noqa: CP02
     Points AS championship_points, -- noqa: CP02
-    CAST(session_id AS Nullable (Int64)) AS session_id,-- noqa: CP02
-    CAST(event_id AS Nullable (Int64)) AS event_id-- noqa: CP02
-FROM file('fastf1/results.parquet', 'Parquet')-- noqa: CP03
+    session_id,-- noqa: CP02
+    event_id-- noqa: CP02
+FROM {{ source("dagster", "bq_bronze_fastf1_session_results") }}
