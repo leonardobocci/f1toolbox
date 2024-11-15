@@ -21,6 +21,7 @@ fastf1 = ">=3.3.9" #only latest ver is supported
 dbt-core = ">=1.8.3, <2"
 dbt-bigquery = ">=1.8.0, <2"
 scipy = ">=1.14.0, <2"
+google-cloud-bigquery = ">=3.27.0"
 google-cloud-storage = ">=2.18.2"
 gcsfs = ">=2024.9.0.post1"
 kubernetes = ">=31.0.0"

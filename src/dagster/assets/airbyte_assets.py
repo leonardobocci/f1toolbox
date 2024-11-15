@@ -103,16 +103,6 @@ bq_bronze_fastf1_sessions = with_resources(
     {"airbyte": airbyte_instance},
 )
 
-bq_bronze_fastf1_telemetry = with_resources(
-    build_airbyte_assets(
-        connection_id="247c97c7-1329-4fdf-9050-7fccdd850b09",
-        destination_tables=["bq_bronze_fastf1_telemetry"],
-        deps=[AssetKey("bronze_fastf1_telemetry")],
-        group_name="bronze_bigquery",
-    ),
-    {"airbyte": airbyte_instance},
-)
-
 bq_bronze_fastf1_tyres = with_resources(
     build_airbyte_assets(
         connection_id="f6635af6-f6c7-4bdd-9fba-4e24b3fce8cb",
