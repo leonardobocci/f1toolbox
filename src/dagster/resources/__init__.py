@@ -9,4 +9,8 @@ airbyte_instance = AirbyteResource(
     username=EnvVar("airbyte-username"),
     password=EnvVar("instance-admin-password"),
     use_https=True,
+    request_max_retries=5,
+    request_retry_delay=10,
+    request_timeout=45,
+    poll_interval=30,
 )
