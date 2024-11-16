@@ -184,7 +184,7 @@ streams = {
     "fastf1_events": "bronze_fastf1_events",
     # "fastf1_laps": "bronze_fastf1_laps",
     # "fastf1_session_results": "bronze_fastf1_session_results",
-    "fastf1_sessions": "bronze_fastf1_sessions",
+    # "fastf1_sessions": "bronze_fastf1_sessions",
     "fastf1_tyres": "bronze_fastf1_tyres",
     "fastf1_weathers": "bronze_fastf1_weathers",
     # "fastf1_telemetry": "bronze_fastf1_telemetry",
