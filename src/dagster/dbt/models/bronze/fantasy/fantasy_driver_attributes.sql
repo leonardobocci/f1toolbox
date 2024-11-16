@@ -22,6 +22,6 @@ SELECT
     race_pos_points,
     NULL AS race_pit_stop_points,
     race_dotd_points AS race_driver_of_day_points,
-    season
+    CAST(season AS INT64) AS season
 FROM
     {{ source("f1toolbox_core", "bq_bronze_fantasy_driver_results") }}
