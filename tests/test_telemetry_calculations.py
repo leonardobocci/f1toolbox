@@ -95,5 +95,5 @@ def test_enrich_fastf1_telemetry():
     assertion_df_equality(got_df, expected_df)
 
 
-def fake_test_temp():
+def test_fake_test_temp():
     assert False
