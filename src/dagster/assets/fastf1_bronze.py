@@ -138,3 +138,33 @@ def bq_bronze_fastf1_telemetry(context) -> None:
     meta = load_parquet_file_to_table(source_uri, table_id)
     context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
     context.add_output_metadata({"Columns": MetadataValue.int(meta["num_cols"])})
+
+
+@asset(
+    group_name="bronze_bigquery",
+    compute_kind="python",
+    deps=AssetKey("bronze_fastf1_laps"),
+)
+def bq_bronze_fastf1_laps(context) -> None:
+    """Parse landing zone fastf1 event details to parquet file"""
+    table_id = "f1toolbox-core.f1toolbox_core.bq_bronze_fastf1_laps"
+    source_uri = "gs://f1toolbox-bronze-bucket/fastf1/bronze_fastf1_laps.parquet"
+    meta = load_parquet_file_to_table(source_uri, table_id)
+    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
+    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_cols"])})
+
+
+@asset(
+    group_name="bronze_bigquery",
+    compute_kind="python",
+    deps=AssetKey("bronze_fastf1_session_results"),
+)
+def bq_bronze_fastf1_session_results(context) -> None:
+    """Parse landing zone fastf1 event details to parquet file"""
+    table_id = "f1toolbox-core.f1toolbox_core.bq_bronze_fastf1_session_results"
+    source_uri = (
+        "gs://f1toolbox-bronze-bucket/fastf1/bronze_fastf1_session_results.parquet"
+    )
+    meta = load_parquet_file_to_table(source_uri, table_id)
+    context.add_output_metadata({"Rows": MetadataValue.int(meta["num_rows"])})
+    context.add_output_metadata({"Columns": MetadataValue.int(meta["num_cols"])})

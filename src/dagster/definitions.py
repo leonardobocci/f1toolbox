@@ -16,6 +16,7 @@ from src.dagster.assets import (
 from src.dagster.assets.constants import PROJECT
 from src.dagster.dbt_project import dbt_project
 from src.dagster.jobs import (
+    bigquery_refresh,
     dbt_refresh,
     refresh_fantasy_bronze,
     refresh_fantasy_landing,
@@ -49,6 +50,7 @@ all_jobs = [
     refresh_season_fastf1_landing,
     refresh_fastf1_landing,
     refresh_fastf1_bronze,
+    bigquery_refresh,
     dbt_refresh,
 ]
 
