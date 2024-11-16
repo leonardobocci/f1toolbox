@@ -93,7 +93,3 @@ def assertion_df_equality(got_df: pl.LazyFrame, expected_df):
 def test_enrich_fastf1_telemetry():
     got_df = enrich_fastf1_telemetry(context, df)
     assertion_df_equality(got_df, expected_df)
-
-
-def test_fake_test_temp():
-    assert False
