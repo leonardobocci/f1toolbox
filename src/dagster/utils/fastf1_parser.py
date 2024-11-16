@@ -147,8 +147,8 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             [
                 ((pl.col("x_prev_2") + pl.col("x_prev_1")) / 2).alias("ax"),
                 ((pl.col("y_prev_2") + pl.col("y_prev_1")) / 2).alias("ay"),
-                (pl.col("x_prev_2") - pl.col("x_prev_1")).alias("ux"),
-                (pl.col("y_prev_2") - pl.col("y_prev_1")).alias("uy"),
+                (pl.col("y_prev_2") - pl.col("y_prev_1")).alias("ux"),
+                (pl.col("x_prev_1") - pl.col("x_prev_2")).alias("uy"),
                 ((pl.col("x_prev_1") + pl.col("X")) / 2).alias("bx"),
                 ((pl.col("y_prev_1") + pl.col("Y")) / 2).alias("by"),
                 (pl.col("y_prev_1") - pl.col("Y")).alias("vx"),
@@ -181,7 +181,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
                 (pl.col("by") + pl.col("g") * pl.col("vy")).alias("center_y"),
             ]
         )
-        results = temp_df.select([*df.columns, "center_x", "center_y"])
+        results = temp_df.select([*df.collect_schema().names(), "center_x", "center_y"])
         context.log.debug("Added circle center to each point...")
         return results
 
@@ -203,7 +203,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
     def get_car_lateral_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
         # convert to meters per second and meters
         # https://docs.fastf1.dev/core.html#telemetry for column units of measurements
-        selection = df.columns
+        selection = df.collect_schema().names()
         df = df.with_columns(
             [
                 (pl.col("Speed") / 3.6).alias("ms_speed"),
@@ -222,7 +222,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         return results
 
     def get_car_longitudinal_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        selection = df.columns
+        selection = df.collect_schema().names()
         df = df.with_columns(
             [
                 (pl.col("delta_speed") / 3.6).alias("delta_ms_speed"),
@@ -241,7 +241,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         context.log.debug("Added longitudinal acceleration.")
         return results
 
-    selection = df.columns
+    selection = df.collect_schema().names()
     df = get_circle_center(context, df)
     df = get_circle_radius(context, df)
     df = get_car_lateral_load(context, df)
