@@ -44,7 +44,10 @@ dim_events_sessions as (
 
 fastf1_weathers as (
 
-    select * from {{ ref('fastf1_weathers') }}
+    select
+        *,
+        cast(is_raining as INT64) as is_raining
+    from {{ ref('fastf1_weathers') }}
 
 ),
 

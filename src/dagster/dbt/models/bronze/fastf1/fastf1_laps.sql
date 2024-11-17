@@ -1,7 +1,8 @@
 SELECT
     Driver AS driver_code,-- noqa: CP02
-    Time AS session_time_lap_end,-- noqa: CP02
-    end_time,-- noqa: CP02
+    session_time_lap_end,-- noqa: CP02
+    lap_start_timestamp,-- noqa: CP02
+    next_lap_start_timestamp,-- noqa: CP02
     DriverNumber AS driver_number,-- noqa: CP02
     LapTime AS lap_time,-- noqa: CP02
     LapNumber AS lap_number,-- noqa: CP02
@@ -23,8 +24,7 @@ SELECT
     TyreLife AS tyre_age_laps, -- noqa: CP02
     FreshTyre AS is_fresh_tyre, -- noqa: CP02
     Team AS constructor_name, -- noqa: CP02
-    LapStartTime AS lap_start_time, -- noqa: CP02
-    LapStartDate AS lap_start_date,-- noqa: CP02
+    LapStartTime AS session_time_lap_start, -- noqa: CP02
     TrackStatus AS track_status,-- noqa: CP02
     Position AS current_position, -- noqa: CP02
     Deleted AS is_deleted,-- noqa: CP02

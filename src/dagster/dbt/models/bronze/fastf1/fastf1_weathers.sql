@@ -1,6 +1,6 @@
 SELECT
-    timestamp AS session_timestamp, -- noqa: CP02
-    end_timestamp AS valid_to,-- noqa: CP02
+    timestamp AS from_timestamp, -- noqa: CP02
+    end_timestamp AS to_timestamp,-- noqa: CP02
     AirTemp AS air_temperature, -- noqa: CP02
     Humidity AS humidity, -- noqa: CP02, AL09
     Pressure AS pressure, -- noqa: CP02, AL09

@@ -91,11 +91,12 @@ def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def parse_lap_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
-    return df.with_columns(
-        end_time=pl.col("Time").shift(
-            -1, fill_value=df.select(pl.last("Time")).collect()
-        )
-    )  # last value would be null otherwise
+    df = df.with_columns(
+        session_time_lap_end=pl.col("Time"),
+        lap_start_timestamp=pl.col("LapStartDate"),
+        next_lap_start_timestamp=pl.col("LapStartDate").shift(-1),
+    )
+    return df.select(pl.exclude("Time", "LapStartDate"))
 
 
 def parse_weather_timestamps(
@@ -112,13 +113,18 @@ def parse_weather_timestamps(
         timestamp=pl.col("seconds_from_session_start") + pl.col("utc_start_datetime"),
     )
     df = df.with_columns(
-        end_timestamp=pl.col("seconds_from_session_start").shift(
-            -1, fill_value=pl.col("seconds_from_session_start").last()
+        end_timestamp=pl.col("timestamp").shift(
+            -1, fill_value=pl.col("timestamp").last()
         )
     )
     df = df.select(*selection, "timestamp", "end_timestamp")
     df = df.select(pl.exclude("Time"))
     return df
+
+
+def parse_telemetry_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    """Get rid of fastf1 time column, leave only session time (time from start of the session) and date (utc datetime value)."""
+    return df.select(pl.exclude("Time"))
 
 
 def telemetry_coordinate_calculations(context, df: pl.LazyFrame) -> pl.LazyFrame:
@@ -321,7 +327,7 @@ def handle_outliers(context, df: pl.LazyFrame, handling="drop") -> pl.LazyFrame:
 
 def enrich_individual_telemetry_parquet_files(context, df) -> None:
     """For each small telemetry file, add accelerations and digital filters, running operations in parallel (because this is an IO bound operation). Write the dfs to a separate directory with parquet files."""
-
+    df = parse_telemetry_timestamps(context, df)
     df = telemetry_coordinate_calculations(context, df)
     df = enrich_fastf1_telemetry(context, df)
     df = handle_outliers(context, df)
