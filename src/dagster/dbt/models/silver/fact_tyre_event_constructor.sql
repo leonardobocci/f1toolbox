@@ -5,7 +5,7 @@ event_car_tyre_performance as (
         event_id,
         constructor_name,
         tyre_compound,
-        total_stint_time / stint_length as avg_tyre_lap_time
+        ieee_divide(total_stint_time, stint_length) as avg_tyre_lap_time
     from {{ ref('fact_tyre_stints') }}
 ),
 

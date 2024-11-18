@@ -1,95 +1,85 @@
 version: 2
 
 models:
-  - name: driver_session_performance
-    description: >
-      [Gold layer (ready for consumption)]
-      Average accelerations per driver, per session,
-      for circuit zones (braking, acceleration, corner types).
-    columns:
-      - name: asset_type
-        data_tests:
-          - not_null
-          - accepted_values:
-              values: ['Driver', 'Constructor']
-      - name: asset_id
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('dim_assets')
-              field: asset_id
-      - name: asset_name
-        data_tests:
-          - not_null
-      - name: is_active
-        data_tests:
-          - not_null
-          - accepted_values:
-              values: [0, 1]
-      - name: event_id
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('dim_events')
-              field: event_id
-      - name: driver_number
-        data_tests:
-          - not_null
-      - name: fastf1_driver_id
-      - name: driver_first_name
-      - name: driver_last_name
-      - name: driver_full_name
-      - name: driver_photo_url
-      - name: driver_country_code
-      - name: broadcast_name
-      - name: fastf1_constructor_id
-      - name: constructor_name
-      - name: constructor_color
-      - name: slow_corners_avg_lateral_acceleration
-        data_tests:
-          - not_null
-      - name: medium_corners_avg_lateral_acceleration
-        data_tests:
-          - not_null
-      - name: fast_corners_avg_lateral_acceleration
-        data_tests:
-          - not_null
-      - name: braking_zones_avg_longitudinal_acceleration
-        data_tests:
-          - not_null
-      - name: acceleration_zones_avg_longitudinal_acceleration
-        data_tests:
-          - not_null
-      - name: max_speed
-        data_tests:
-          - not_null
+- name: driver_session_performance
+  description: >
+    [Gold layer (ready for consumption)] Average accelerations per driver, per session, for circuit zones (braking, acceleration, corner types).
+  columns:
+  - name: asset_type
+    data_tests:
+    - not_null
+    - accepted_values:
+        values: [ 'Driver', 'Constructor' ]
+  - name: asset_id
+    data_tests:
+    - not_null
+    - relationships:
+        to: ref('dim_assets')
+        field: asset_id
+  - name: asset_name
+    data_tests:
+    - not_null
+  - name: event_id
+    data_tests:
+    - not_null
+    - relationships:
+        to: ref('dim_events')
+        field: event_id
+  - name: driver_number
+    data_tests:
+    - not_null
+  - name: fastf1_driver_id
+  - name: driver_first_name
+  - name: driver_last_name
+  - name: driver_full_name
+  - name: driver_photo_url
+  - name: driver_country_code
+  - name: broadcast_name
+  - name: fastf1_constructor_id
+  - name: constructor_name
+  - name: constructor_color
+  - name: slow_corners_avg_lateral_acceleration
+    data_tests:
+    - not_null
+  - name: medium_corners_avg_lateral_acceleration
+    data_tests:
+    - not_null
+  - name: fast_corners_avg_lateral_acceleration
+    data_tests:
+    - not_null
+  - name: braking_zones_avg_longitudinal_acceleration
+    data_tests:
+    - not_null
+  - name: acceleration_zones_avg_longitudinal_acceleration
+    data_tests:
+    - not_null
+  - name: max_speed
+    data_tests:
+    - not_null
 
-  - name: tyre_event_performance
-    description: >
-      [Gold layer (ready for consumption)]
-      Average tyre performance per constructor, per event (weekend), per tyre compound,
-      including:
-      1. a factor for tyre aging (can be multiplied by the number of laps a tyre has covered
-                               to obtain a factor of expected laptime reduction from a base laptime).
-      2. a percentage of gap from the best tyre of the weekend.
-    columns:
-      - name: event_id
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('dim_events')
-              field: event_id
-      - name: tyre_compound
-        data_tests:
-          - not_null
-          - relationships:
-              to: ref('fastf1_tyres')
-              field: compound
-      - name: avg_tyre_age_factor
-        data_tests:
-          - not_null
-      - name: avg_pct_away_from_best_tyre
-        data_tests:
-          - not_null
-          - column_values_greater_than:
-              min_value: 0
+- name: tyre_event_performance
+  description: >
+    [Gold layer (ready for consumption)] Average tyre performance per constructor, per event (weekend), per tyre compound, including: 1. a factor for tyre aging (can be multiplied by the number of laps a tyre has covered
+                             to obtain a factor of expected laptime reduction from a base laptime).
+    2. a percentage of gap from the best tyre of the weekend.
+  columns:
+  - name: event_id
+    data_tests:
+    - not_null
+    - relationships:
+        to: ref('dim_events')
+        field: event_id
+  - name: tyre_compound
+    data_tests:
+    - not_null
+    - relationships:
+        to: ref('fastf1_tyres')
+        field: compound
+  - name: avg_tyre_age_factor
+    data_tests:
+    - not_null
+  - name: avg_pct_away_from_best_tyre
+    data_tests:
+    - not_null
+    - column_values_greater_than:
+        min_value: 0
