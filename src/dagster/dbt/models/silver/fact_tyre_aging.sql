@@ -80,7 +80,8 @@ tyre_age_factor as (
         driver_code,
         tyre_compound,
         ieee_divide(
-            (n * sum_xy - sum_x * sum_y), (n * sum_of_squares - sum_x * sum_x)
+            (n * sum_xy - sum_x * sum_y),
+            (n * sum_of_squares - sum_x * sum_x)
         ) as tyre_age_factor
     from regression
 )
