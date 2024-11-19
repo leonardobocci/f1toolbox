@@ -174,6 +174,7 @@ def create_connection(source: dict, destination: dict):
 
 # execution
 streams = {
+    # some streams disabled due to poor airbyte performance, synced directly
     "fantasy_constructor_results": "bronze_fantasy_constructor_results",
     "fantasy_driver_results": "bronze_fantasy_driver_results",
     "fantasy_current_constructors": "bronze_fantasy_current_constructors",
@@ -181,12 +182,12 @@ streams = {
     "fantasy_rounds": "bronze_fantasy_rounds",
     "fastf1_circuit_corners": "bronze_fastf1_circuit_corners",
     "fastf1_events": "bronze_fastf1_events",
-    "fastf1_laps": "bronze_fastf1_laps",
-    "fastf1_session_results": "bronze_fastf1_session_results",
-    "fastf1_sessions": "bronze_fastf1_sessions",
+    # "fastf1_laps": "bronze_fastf1_laps",
+    # "fastf1_session_results": "bronze_fastf1_session_results",
+    # "fastf1_sessions": "bronze_fastf1_sessions",
     "fastf1_tyres": "bronze_fastf1_tyres",
     "fastf1_weathers": "bronze_fastf1_weathers",
-    # "fastf1_telemetry": "bronze_fastf1_telemetry", #disabled due to poor performance
+    # "fastf1_telemetry": "bronze_fastf1_telemetry",
 }
 delete_resources("sources")
 delete_resources("destinations")

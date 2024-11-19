@@ -1,14 +1,11 @@
 {
-    "fantasy_constructor_results": "ecc91bc1-66cc-48b6-8930-323a94459601",
-    "fantasy_driver_results": "c2a7dcc7-33ce-48b4-b58b-1d086ec920b3",
-    "fantasy_current_constructors": "5b7219fd-3d61-481b-8aaf-8eeacb452a13",
-    "fantasy_current_drivers": "1d532f11-aaaf-49c9-8a79-b25450185b24",
-    "fantasy_rounds": "e15338ec-839c-4385-b365-9633a4bf965f",
-    "fastf1_circuit_corners": "59680705-2948-4d4f-8d37-bc539b85ce3d",
-    "fastf1_events": "5f127216-998d-4d85-a949-75c1b0735fef",
-    "fastf1_laps": "c3a63a35-c89d-4f2f-902d-42247ffef78e",
-    "fastf1_session_results": "77023398-d1bc-48c3-a7bb-df31ac8f5287",
-    "fastf1_sessions": "de2887f7-8d34-47eb-b6d6-16c5ce3361de",
-    "fastf1_tyres": "64ace030-b17e-43bf-b6ec-177b24cbb021",
-    "fastf1_weathers": "72926c1e-3fea-4226-a614-cdc1d1ca4b1b"
+    "fantasy_constructor_results": "64dd0083-609c-465f-8233-96e523f4c127",
+    "fantasy_driver_results": "954df596-1948-4bdb-807b-f1e9cea6c4e0",
+    "fantasy_current_constructors": "55284531-a9db-4893-901c-c537566750a3",
+    "fantasy_current_drivers": "0f7484e6-84f6-44cd-8956-871d3369d480",
+    "fantasy_rounds": "3d977dd8-6aa2-4128-b6e2-66064f53b333",
+    "fastf1_circuit_corners": "29b69f61-4073-4e26-88e9-c5e1b28cd3b3",
+    "fastf1_events": "b09dab49-bf11-4230-94a1-8398b3eca5c2",
+    "fastf1_tyres": "acf60aa2-6759-4380-93a2-67d38236a48c",
+    "fastf1_weathers": "2bdf3058-2ac4-45de-9232-b09d0ad7e76e"
 }

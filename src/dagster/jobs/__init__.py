@@ -50,6 +50,6 @@ bigquery_refresh = define_asset_job(
 )
 
 dbt_refresh = define_asset_job(
-    name="refresh_bronze_dbt",
+    name="dbt_refresh",
     selection=dbt_assets,
 )

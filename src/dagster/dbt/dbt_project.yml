@@ -27,12 +27,20 @@ models:
     bronze:
       +materialized: view
       +group: bronze
+      +labels:
+        refinement: bronze
     silver:
       +materialized: view
       +group: silver
+      +labels:
+        refinement: silver
     gold:
       +materialized: table
       +group: gold
+      +labels:
+        refinement: gold
     marts:
       +materialized: table
       +group: marts
+      +labels:
+        refinement: marts

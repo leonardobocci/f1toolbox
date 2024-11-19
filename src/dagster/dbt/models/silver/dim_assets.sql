@@ -51,7 +51,6 @@ dim_assets as (
         a.asset_type,
         a.asset_id,
         a.asset_name,
-        a.is_active,
         b.event_id,
         b.driver_number,
         b.fastf1_driver_id,

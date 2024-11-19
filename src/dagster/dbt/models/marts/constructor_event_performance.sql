@@ -48,28 +48,37 @@ select
     a.constructor_name,
     a.event_id,
     10
-    * (a.slow_corners_avg_lateral_acceleration - b.min_slow_corners)
-    / (b.max_slow_corners - b.min_slow_corners) as normalized_slow_corners,
+    * ieee_divide(
+        (a.slow_corners_avg_lateral_acceleration - b.min_slow_corners),
+        (b.max_slow_corners - b.min_slow_corners)
+    ) as normalized_slow_corners,
     10
-    * (a.medium_corners_avg_lateral_acceleration - b.min_medium_corners)
-    / (b.max_medium_corners - b.min_medium_corners)
+    * ieee_divide(
+        (a.medium_corners_avg_lateral_acceleration - b.min_medium_corners),
+        (b.max_medium_corners - b.min_medium_corners))
         as normalized_medium_corners,
     10
-    * (a.fast_corners_avg_lateral_acceleration - b.min_fast_corners)
-    / (b.max_fast_corners - b.min_fast_corners) as normalized_fast_corners,
+    * ieee_divide(
+        (a.fast_corners_avg_lateral_acceleration - b.min_fast_corners),
+        (b.max_fast_corners - b.min_fast_corners)
+    ) as normalized_fast_corners,
     10
-    * (a.braking_zones_avg_longitudinal_acceleration - b.min_braking_zones)
-    / (b.max_braking_zones - b.min_braking_zones) as normalized_braking_zones,
+    * ieee_divide(
+        (a.braking_zones_avg_longitudinal_acceleration - b.min_braking_zones),
+        (b.max_braking_zones - b.min_braking_zones)
+    ) as normalized_braking_zones,
     10
-    * (
+    * ieee_divide((
         a.acceleration_zones_avg_longitudinal_acceleration
         - b.min_acceleration_zones
-    )
-    / (b.max_acceleration_zones - b.min_acceleration_zones)
+    ),
+    (b.max_acceleration_zones - b.min_acceleration_zones))
         as normalized_acceleration_zones,
     10
-    * (a.avg_top_speed - b.min_top_speed)
-    / (b.max_top_speed - b.min_top_speed) as normalized_top_speed
+    * ieee_divide(
+        (a.avg_top_speed - b.min_top_speed),
+        (b.max_top_speed - b.min_top_speed)
+    ) as normalized_top_speed
 from
     constructor_event_performance as a
 inner join

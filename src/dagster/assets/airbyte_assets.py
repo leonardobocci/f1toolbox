@@ -78,36 +78,6 @@ bq_bronze_fastf1_events = with_resources(
     {"airbyte": airbyte_instance},
 )
 
-bq_bronze_fastf1_laps = with_resources(
-    build_airbyte_assets(
-        connection_id=airbyte_connections["fastf1_laps"],
-        destination_tables=["bq_bronze_fastf1_laps"],
-        deps=[AssetKey("bronze_fastf1_laps")],
-        group_name="bronze_bigquery",
-    ),
-    {"airbyte": airbyte_instance},
-)
-
-bq_bronze_fastf1_session_results = with_resources(
-    build_airbyte_assets(
-        connection_id=airbyte_connections["fastf1_session_results"],
-        destination_tables=["bq_bronze_fastf1_session_results"],
-        deps=[AssetKey("bronze_fastf1_session_results")],
-        group_name="bronze_bigquery",
-    ),
-    {"airbyte": airbyte_instance},
-)
-
-bq_bronze_fastf1_sessions = with_resources(
-    build_airbyte_assets(
-        connection_id=airbyte_connections["fastf1_sessions"],
-        destination_tables=["bq_bronze_fastf1_sessions"],
-        deps=[AssetKey("bronze_fastf1_sessions")],
-        group_name="bronze_bigquery",
-    ),
-    {"airbyte": airbyte_instance},
-)
-
 bq_bronze_fastf1_tyres = with_resources(
     build_airbyte_assets(
         connection_id=airbyte_connections["fastf1_tyres"],

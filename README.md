@@ -1,7 +1,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 Target Architecture:
-[Architecture diagram](docs/f1toolbox_architecture.png)
+<img src="docs/f1toolbox_architecture.png">
 
 Create airbyte assets after cluster defined in f1toolbox_infra repository is configured by running the src/airbyte/airbyte_conf_script.py
 This script requires local credential files and an update of the workspace id (available in the airbyte UI).

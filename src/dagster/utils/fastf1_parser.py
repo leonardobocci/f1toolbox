@@ -91,11 +91,12 @@ def parse_results_lap_times(context, df: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def parse_lap_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
-    return df.with_columns(
-        end_time=pl.col("Time").shift(
-            -1, fill_value=df.select(pl.last("Time")).collect()
-        )
-    )  # last value would be null otherwise
+    df = df.with_columns(
+        session_time_lap_end=pl.col("Time"),
+        lap_start_timestamp=pl.col("LapStartDate"),
+        next_lap_start_timestamp=pl.col("LapStartDate").shift(-1),
+    )
+    return df.select(pl.exclude("Time", "LapStartDate"))
 
 
 def parse_weather_timestamps(
@@ -112,13 +113,18 @@ def parse_weather_timestamps(
         timestamp=pl.col("seconds_from_session_start") + pl.col("utc_start_datetime"),
     )
     df = df.with_columns(
-        end_timestamp=pl.col("seconds_from_session_start").shift(
-            -1, fill_value=pl.col("seconds_from_session_start").last()
+        end_timestamp=pl.col("timestamp").shift(
+            -1, fill_value=pl.col("timestamp").last()
         )
     )
     df = df.select(*selection, "timestamp", "end_timestamp")
     df = df.select(pl.exclude("Time"))
     return df
+
+
+def parse_telemetry_timestamps(context, df: pl.LazyFrame) -> pl.LazyFrame:
+    """Get rid of fastf1 time column, leave only session time (time from start of the session) and date (utc datetime value)."""
+    return df.select(pl.exclude("Time"))
 
 
 def telemetry_coordinate_calculations(context, df: pl.LazyFrame) -> pl.LazyFrame:
@@ -147,8 +153,8 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
             [
                 ((pl.col("x_prev_2") + pl.col("x_prev_1")) / 2).alias("ax"),
                 ((pl.col("y_prev_2") + pl.col("y_prev_1")) / 2).alias("ay"),
-                (pl.col("x_prev_2") - pl.col("x_prev_1")).alias("ux"),
-                (pl.col("y_prev_2") - pl.col("y_prev_1")).alias("uy"),
+                (pl.col("y_prev_2") - pl.col("y_prev_1")).alias("ux"),
+                (pl.col("x_prev_1") - pl.col("x_prev_2")).alias("uy"),
                 ((pl.col("x_prev_1") + pl.col("X")) / 2).alias("bx"),
                 ((pl.col("y_prev_1") + pl.col("Y")) / 2).alias("by"),
                 (pl.col("y_prev_1") - pl.col("Y")).alias("vx"),
@@ -181,7 +187,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
                 (pl.col("by") + pl.col("g") * pl.col("vy")).alias("center_y"),
             ]
         )
-        results = temp_df.select([*df.columns, "center_x", "center_y"])
+        results = temp_df.select([*df.collect_schema().names(), "center_x", "center_y"])
         context.log.debug("Added circle center to each point...")
         return results
 
@@ -203,7 +209,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
     def get_car_lateral_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
         # convert to meters per second and meters
         # https://docs.fastf1.dev/core.html#telemetry for column units of measurements
-        selection = df.columns
+        selection = df.collect_schema().names()
         df = df.with_columns(
             [
                 (pl.col("Speed") / 3.6).alias("ms_speed"),
@@ -222,7 +228,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         return results
 
     def get_car_longitudinal_load(context, df: pl.LazyFrame) -> pl.LazyFrame:
-        selection = df.columns
+        selection = df.collect_schema().names()
         df = df.with_columns(
             [
                 (pl.col("delta_speed") / 3.6).alias("delta_ms_speed"),
@@ -241,7 +247,7 @@ def enrich_fastf1_telemetry(context, df: pl.LazyFrame) -> pl.LazyFrame:
         context.log.debug("Added longitudinal acceleration.")
         return results
 
-    selection = df.columns
+    selection = df.collect_schema().names()
     df = get_circle_center(context, df)
     df = get_circle_radius(context, df)
     df = get_car_lateral_load(context, df)
@@ -321,7 +327,7 @@ def handle_outliers(context, df: pl.LazyFrame, handling="drop") -> pl.LazyFrame:
 
 def enrich_individual_telemetry_parquet_files(context, df) -> None:
     """For each small telemetry file, add accelerations and digital filters, running operations in parallel (because this is an IO bound operation). Write the dfs to a separate directory with parquet files."""
-
+    df = parse_telemetry_timestamps(context, df)
     df = telemetry_coordinate_calculations(context, df)
     df = enrich_fastf1_telemetry(context, df)
     df = handle_outliers(context, df)

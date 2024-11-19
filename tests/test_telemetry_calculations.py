@@ -9,20 +9,19 @@ from unittest.mock import MagicMock
 
 import dateutil.parser
 import polars as pl
-import zoneinfo
 
 from src.dagster.utils.fastf1_parser import enrich_fastf1_telemetry
 
 context = MagicMock()
 
-datetime_obj = dateutil.parser.isoparse("2023-03-03T11:15:04.569Z")
+datetime_obj = dateutil.parser.isoparse("2024-01-30T12:15:05.500Z")
 
 data = {
     "Speed": [100, 150, 50],
     "time": [
         datetime_obj + timedelta(microseconds=50),
         datetime_obj + timedelta(microseconds=240),
-        datetime_obj + timedelta(microseconds=100),
+        datetime_obj + timedelta(microseconds=340),
     ],
     "X": [0, 5, 0],
     "Y": [0, 15, 5],
@@ -39,47 +38,58 @@ df = df.with_columns(
     ]
 )
 
+# https://planetcalc.com/8116/ To get circle centers and radiuses for testing
+# remember to set precision to 20 digits
+# see the excel file (open document format) accel_calculations
+
 data_exp = [
     {
         "Speed": 100,
-        "time": datetime.datetime(
-            2023, 3, 3, 11, 15, 4, 569050, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-        ),
+        "time": datetime_obj + timedelta(microseconds=50),
         "X": 0,
         "Y": 0,
         "delta_time": None,
         "delta_speed": None,
-        "lateral_acceleration": 13.802888749998703,
-        "longitudinal_acceleration": None,
+        "lateral_acceleration": None,  # due to collinear points
+        "longitudinal_acceleration": None,  # due to lack of prev speed
     },
     {
         "Speed": 150,
-        "time": datetime.datetime(
-            2023, 3, 3, 11, 15, 4, 569240, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-        ),
+        "time": datetime_obj + timedelta(microseconds=240),
         "X": 5,
         "Y": 15,
         "delta_time": datetime.timedelta(microseconds=190),
         "delta_speed": 50,
-        "lateral_acceleration": 21.739549781247963,
-        "longitudinal_acceleration": 73099.41520467837,
+        "lateral_acceleration": 1.8237004563850359,  # note slight precision diff vs excel: 1.82370045638504
+        "longitudinal_acceleration": 73099.41520467836,
     },
     {
         "Speed": 50,
-        "time": datetime.datetime(
-            2023, 3, 3, 11, 15, 4, 569400, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-        ),
+        "time": datetime_obj + timedelta(microseconds=340),
         "X": 0,
         "Y": 5,
-        "delta_time": datetime.timedelta(microseconds=160),
+        "delta_time": datetime.timedelta(microseconds=100),
         "delta_speed": -100,
-        "lateral_acceleration": 3.4160406822806566,
-        "longitudinal_acceleration": -173611.11111111112,
+        "lateral_acceleration": 1.0912141684977585,
+        "longitudinal_acceleration": -277777.77777777775,
     },
 ]
 expected_df = pl.LazyFrame(data_exp)
 
 
+def assertion_df_equality(got_df: pl.LazyFrame, expected_df):
+    try:
+        assert got_df.collect().equals(expected_df.collect())
+    except AssertionError as e:
+        print("Got:")
+        print(got_df.collect())
+        print("Expected:")
+        print(expected_df.collect())
+        got_df.collect().write_parquet("got.parquet")
+        expected_df.collect().write_parquet("exp.parquet")
+        raise AssertionError("Dataframes not matching") from e
+
+
 def test_enrich_fastf1_telemetry():
     got_df = enrich_fastf1_telemetry(context, df)
-    assert got_df.collect().equals(expected_df.collect())
+    assertion_df_equality(got_df, expected_df)

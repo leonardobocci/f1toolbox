@@ -42,9 +42,12 @@ dim_events_sessions as (
         on a.event_id = b.event_id
 ),
 
-fastf1_weathers as (
+weathers as (
 
-    select * from {{ ref('fastf1_weathers') }}
+    select
+        *,
+        cast(is_raining as INT64) as num_is_raining
+    from {{ ref('fastf1_weathers') }}
 
 ),
 
@@ -57,10 +60,10 @@ session_weathers as (
         avg(track_temperature) as avg_track_temperature,
         avg(humidity) as avg_humidity,
         avg(wind_speed) as avg_wind_speed,
-        sum(is_raining)
-        / count(is_raining) as raining_percentage_of_session_time
+        sum(num_is_raining)
+        / count(num_is_raining) as raining_percentage_of_session_time
     from
-        fastf1_weathers
+        weathers
     group by
         session_id,
         event_id
