@@ -130,6 +130,24 @@ joined_car_performance as (
         on
             a.left_car_number = da.driver_number
             and a.left_event_id = da.event_id
+),
+
+dim_sessions as (select * from {{ ref('dim_sessions') }}),
+
+rich_car_performance as (
+    select
+        a.*,
+        b.season,
+        b.round_number,
+        b.event_name,
+        b.country_key,
+        b.circuit_key,
+        b.country_code,
+        b.circuit_shortname,
+        b.session_type,
+        b.session_number
+    from joined_car_performance as a
+    left join dim_sessions as b on a.session_id = b.session_id
 )
 
-select * from joined_car_performance
+select * from rich_car_performance

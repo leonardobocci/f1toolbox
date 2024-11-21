@@ -1,7 +1,7 @@
 version: 2
 
 models:
-- name: driver_session_performance
+- name: car_session_performance
   description: >
     [Gold layer (ready for consumption)] Average accelerations per driver, per session, for circuit zones (braking, acceleration, corner types).
   columns:
