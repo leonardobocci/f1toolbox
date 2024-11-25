@@ -44,9 +44,9 @@ lateral_averages as (
         b.medium_corners_avg_lateral_acceleration,
         c.fast_corners_avg_lateral_acceleration
     from slow_corners as a
-    inner join medium_corners as b
+    full join medium_corners as b
         on a.session_id = b.session_id and a.car_number = b.car_number
-    inner join fast_corners as c
+    full join fast_corners as c
         on a.session_id = c.session_id and a.car_number = c.car_number
 ),
 
@@ -79,7 +79,7 @@ longitudinal_averages as (
         a.braking_zones_avg_longitudinal_acceleration,
         b.acceleration_zones_avg_longitudinal_acceleration
     from braking_zones as a
-    inner join acceleration_zones as b
+    full join acceleration_zones as b
         on a.session_id = b.session_id and a.car_number = b.car_number
 ),
 
@@ -105,10 +105,10 @@ car_performance as (
         b.acceleration_zones_avg_longitudinal_acceleration,
         c.max_speed
     from lateral_averages as a
-    inner join
+    full join
         longitudinal_averages as b
         on a.session_id = b.session_id and a.car_number = b.car_number
-    inner join
+    full join
         max_speeds as c
         on a.session_id = c.session_id and a.car_number = c.car_number
 ),
@@ -126,7 +126,7 @@ joined_car_performance as (
         a.acceleration_zones_avg_longitudinal_acceleration,
         a.max_speed
     from car_performance as a
-    inner join dim_assets as da
+    left join dim_assets as da
         on
             a.left_car_number = da.driver_number
             and a.left_event_id = da.event_id
