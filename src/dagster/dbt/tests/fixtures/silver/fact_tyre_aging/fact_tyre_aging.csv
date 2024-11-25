@@ -1,4 +1,4 @@
 session_id,event_id,constructor_name,driver_code,tyre_compound,tyre_age_factor
 1,1,Mercedes,HAM,Soft,0.05555555555555558
 1,1,Ferrari,VET,Medium,0.011111111111111072
-1,2,Red Bull,RIC,Soft,NaN
+1,2,Red Bull,RIC,Soft,
