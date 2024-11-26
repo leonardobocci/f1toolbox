@@ -26,19 +26,28 @@ function HomepageHeader() {
         </div>
         <div>
           <iframe
-            src="http://metabase.f1toolbox.com/public/dashboard/e99ff64b-d510-4305-be84-ae0198682c6f"
-            width="1100"
-            height="820"
+            src="https://metabase.f1toolbox.com/public/dashboard/e99ff64b-d510-4305-be84-ae0198682c6f"
+            width="100%"
+            height="100%"
             allowTransparency
+            style={{ minHeight: '820px' }}
           ></iframe>
         </div>
         <div>
           <iframe
-            src="http://metabase.f1toolbox.com/public/dashboard/074743a3-6762-4bb4-883a-8de7043ab5fc"
-            width="1100"
-            height="820"
+            src="https://metabase.f1toolbox.com/public/dashboard/074743a3-6762-4bb4-883a-8de7043ab5fc"
+            width="100%"
+            height="100%"
             allowTransparency
+            style={{ minHeight: '820px' }}
           ></iframe>
+        </div>
+        <div>
+          <Link
+              className="button button--secondary button--lg"
+              href="https://buymeacoffee.com/f1toolbox">
+              Liked it? Buy me a coffee!
+          </Link>
         </div>
       </div>
     </header>
