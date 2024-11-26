@@ -70,6 +70,11 @@ const config = {
           },
           {to: '/blog', label: 'Build Story', position: 'left'},
           {
+            href: 'https://dagster.f1toolbox.com',
+            label: 'Dagster Playground',
+            position: 'left',
+          },
+          {
             href: 'https://github.com/leonardobocci/f1toolbox',
             label: 'Code Repo',
             position: 'right',
