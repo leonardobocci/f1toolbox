@@ -1,0 +1,8 @@
+{
+  "label": "Polars Dataframes",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Blazing fast with elegant syntax. Dataframes for the future."
+  }
+}

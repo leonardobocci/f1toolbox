@@ -1,0 +1,8 @@
+{
+  "label": "Dagster Orchestration",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Declarative data assets."
+  }
+}
