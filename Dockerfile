@@ -1,4 +1,4 @@
-FROM python:3.10.12 AS builder
+FROM python:3.14.0a3 AS builder
 
 # --- Install Poetry ---
 ARG POETRY_VERSION=1.8
