@@ -69,7 +69,7 @@ def parse_session_timestamps(context, df: pl.LazyFrame) -> pl.DataFrame:
             pl.when(pl.col("hour_offset").is_not_null())
             .then(pl.col(mycol).dt.offset_by(pl.col("hour_offset")))
             .otherwise(pl.col(mycol))
-            .alias(f'utc_{mycol.removeprefix("local_")}')
+            .alias(f"utc_{mycol.removeprefix('local_')}")
         )
     df = df.select(
         pl.exclude(

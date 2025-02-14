@@ -28,7 +28,7 @@ def retry(exception_to_check, tries=3, delay=1):
                 except exception_to_check as e:
                     context.log.warning(f"Retrying exception: {str(e)}")
                     context.log.info(
-                        f"Retrying in {delay} seconds... ({_tries-1} tries left)"
+                        f"Retrying in {delay} seconds... ({_tries - 1} tries left)"
                     )
                     time.sleep(delay)
                     _tries -= 1
