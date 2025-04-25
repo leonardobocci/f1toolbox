@@ -67,11 +67,11 @@ def parse_results(context, file, result_type: str, year: int) -> pl.DataFrame:
                         f"Fantasy results length mismatch for {result_type} {i} in {year}"
                     )
                     raise AssertionError(
-                        f'Expected: {schema_contract["fantasy_results_expectations"]}, \n Got: {file[i]["race_results"][0]["fantasy_results"]}'
+                        f"Expected: {schema_contract['fantasy_results_expectations']}, \n Got: {file[i]['race_results'][0]['fantasy_results']}"
                     )
             else:
                 context.log.error(
-                    f'Expected: {schema_contract["fantasy_results_expectations"]}, \n Got: {file[i]["race_results"][0]["fantasy_results"]}'
+                    f"Expected: {schema_contract['fantasy_results_expectations']}, \n Got: {file[i]['race_results'][0]['fantasy_results']}"
                 )
                 raise AssertionError()
         # iterate over the fantasy scoring attributes and assign them as named cols
